@@ -2,32 +2,57 @@
 #include "ESP8266.h"
 #include <NewPing.h>
 
-
 #define SSID        "Telecom-56943924"
 #define PASSWORD    "lVGtZMVqI4XUQp5AWBcEHkQ7"
 
-#define SERVER_NAME "192.168.1.11"
+// #define SSID        "VodafoneMobileWiFi-E3D656"
+// #define PASSWORD    "2926693643"
+
+#define SERVER_NAME "192.168.1.20"
 #define SERVER_PORT (1931)
 
 #define TRIGGER_PIN 50
 #define ECHO_PIN 51
 #define MAX_DISTANCE 200
-#define IRPin 24
+#define IRPinRight 22
+#define IRPinCenter 24
+#define IRPinLeft 26
+
+#define E1 8
+#define E2 13
+#define I1 9
+#define I2 10
+#define I3 11
+#define I4 12
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 ESP8266 wifi(Serial1, 115200);
-int IRVal;
+
+// infrarossi
+int IRLeftVal;
+int IRCenterVal;
+int IRRightVal;
+// sonar
 int sonar_value;
 
 StaticJsonBuffer<200> jsonBuffer;
-String input = "{\"id\":\"Arduino\", \"sonar\":-1, \"IR\": -1}";
+String input = "{\"id\":\"Arduino\", \"sonar\":-1, \"IRLeft\": -1, \"IRCenter\": -1, \"IRRight\": -1}";
 JsonObject& root = jsonBuffer.parseObject(input);
 
 void setup() {
-  pinMode(IRPin, INPUT);
+  pinMode(IRPinLeft, INPUT);
+  pinMode(IRPinCenter, INPUT);
+  pinMode(IRPinRight, INPUT);
+
+  pinMode(E1, OUTPUT);
+  pinMode(E2, OUTPUT);
+  pinMode(I1, OUTPUT);
+  pinMode(I2, OUTPUT);
+  pinMode(I3, OUTPUT);
+  pinMode(I4, OUTPUT);
+
   Serial.begin(115200);
   wifi_setup();
-
 }
 
 void loop() {
@@ -43,11 +68,11 @@ void loop() {
   // receiving data from server
   char* data = receiving_data_TCP();
 
-
+  // moving the robot depending on the received commands from server
   move(data);
   release_TCP_connection();
 
-  delay(5000);
+  delay(100);
 }
 
 void wifi_setup(){
@@ -93,10 +118,16 @@ void release_TCP_connection(){
 }
 
 void get_sensors_data(){
+
   sonar_value = sonar.ping_cm();
-  IRVal = digitalRead(IRPin);
+  IRLeftVal = digitalRead(IRPinLeft);
+  IRCenterVal = digitalRead(IRPinCenter);
+  IRRightVal = digitalRead(IRPinRight);
+
   root["sonar"] = sonar_value;
-  root["IR"] = IRVal;
+  root["IRLeft"] = IRLeftVal;
+  root["IRCenter"] = IRCenterVal;
+  root["IRRight"] = IRRightVal;
 
 }
 
@@ -110,22 +141,48 @@ char* receiving_data_TCP(){
       data[i] = char(buffer[i]);
     }
   }
+  Serial.println("New data received");
   Serial.println(data);
   return data;
 }
 
 void move(char* data){
+
   StaticJsonBuffer<256> jsonStringBuffer;
   JsonObject& jsonString = jsonStringBuffer.parseObject(data);
+
   int forward = jsonString["forward"];
   int back = jsonString["back"];
-  int right = jsonString["right"];
-  int left = jsonString["left"];
-  int rotate = jsonString["rotate"];
+  int speedLeftWheel = jsonString["speedLeftWheel"];
+  int speedRightWheel = jsonString["speedRightWheel"];
 
-  if(forward == 1 && right == 0){
-    Serial.println("Muoviti verso nord");
-  } else {
-    Serial.println("Mettiti a cono rovesciato");
+  if(forward == 1) {
+    move_forward(speedLeftWheel, speedRightWheel);
   }
+  if(back == 1) {
+    move_back(speedLeftWheel, speedRightWheel);
+  }
+
+}
+
+void move_forward(int speedLeftWheel, int speedRightWheel){
+  analogWrite(E1, speedRightWheel);
+  analogWrite(E2, speedLeftWheel);
+
+  digitalWrite(I1, HIGH);
+  digitalWrite(I2, LOW);
+  digitalWrite(I3, LOW);
+  digitalWrite(I4, HIGH);
+
+}
+
+void move_back(int speedLeftWheel, int speedRightWheel){
+  analogWrite(E1, speedRightWheel);
+  analogWrite(E2, speedLeftWheel);
+
+  digitalWrite(I1, LOW);
+  digitalWrite(I2, HIGH);
+  digitalWrite(I3, HIGH);
+  digitalWrite(I4, LOW);
+
 }

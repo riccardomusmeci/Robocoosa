@@ -2,8 +2,16 @@
 Questa classe permette al robot di compiere decisioni in base ai dati che riceve dai sensori
 Attributi:
     - sonar: contiene il valore, in cm, della distanza dell'ostacolo dal robot
-    - IR: e' un booleano che indica la presenza vicina di ostacoli
-    - decision: e' il dizionario che contiene le azioni che il robot deve compiere
+    - IRLeft: e' un booleano che indica la presenza vicina di ostacoli a sinistra
+    - IRCenter: e' un booleano che indica la presenza vicina di ostacoli al centro
+    - IRRight: e' un booleano che indica la presenza vicina di ostacoli a destra
+    - decision: e' il dizionario che contiene le azioni che il robot deve compiere;
+                i campi di questo dizionario sono:
+                    - forward: booleano che dice se muoversi o meno in avanti;
+                    - back: booleano che dice se muoversi o meno indietro;
+                    - speedLeftWheel: indica la velocita' che deve avere la ruota di sx;
+                    - speedRightWheel: indica la velocita' che deve avere la ruota di dx;
+
 Metodi:
     - analyzeData: riceve in input un dizionario e aggiorna i dati che ha del mondo
     - getDecision: metodo che in base ai dati che si hanno del mondo, prende una decisione e la restituisce
@@ -12,16 +20,17 @@ Metodi:
 class RobotBrain(object):
 
     def __init__(self):
-        print "Cervello del robot inizializzato..."
         # in futuro potremmo inizializzare mappe e dati sensoriali, in modo tale da avere dei metodi che operano sui dati costantemente aggiornati
         self.sonar = -1
-        self.IR = -1
+        self.IRLeft = -1
+        self.IRCenter = -1
+        self.IRRight = -1
+
         self.decision = {
-            "forward" : 1, #bool
+            "forward" : 0, #bool
             "back" : 0, #bool
-            "right": 1, #bool
-            "left": 0, #bool
-            "rotate": 0 #gradi
+            "speedLeftWheel": 0,
+            "speedRightWheel": 0,
         }
 
     '''
@@ -31,15 +40,57 @@ class RobotBrain(object):
         - data: deve essere di tipo dizionario (JSON);
     '''
     def analyzeData(self, data):
+        print "\n"
+        print "**********DATI SENSORIALI***********"
         print data
-        print "aggiorno i dati del mondo..."
         self.sonar = data['sonar']
-        self.IR = data['IR']
+        self.IRLeft = data['IRLeft']
+        self.IRRight = data['IRRight']
+        self.IRCenter = data['IRCenter']
 
 
     def getDecision(self):
-        if self.IR == 0 and self.sonar > 40:
-            self.decision['forward'] = 1
-            self.decision['right'] = 0
 
+        if self.IRLeft == 0 or self.IRRight == 0 or self.IRCenter == 0:
+
+            if self.IRLeft == 0 or self.IRCenter == 0:
+                # il robot ruota da dx verso sx (anche nel caso in cui e' bloccato in centro)
+                print "Il robot va indietro e ruota da dx verso sx (ha IR a sx oppure centro occupati)"
+                self.decision = {
+                    "forward" : 0, #bool
+                    "back" : 1, #bool
+                    "speedLeftWheel": 0,
+                    "speedRightWheel": 125,
+                }
+            # il robot ruota da sx verso dx
+            if self.IRRight == 0:
+                print "Il robot va indietro e ruota da sx verso dx (ha IR a dx occupato)"
+                self.decision = {
+                    "forward" : 0, #bool
+                    "back" : 1, #bool
+                    "speedLeftWheel": 125,
+                    "speedRightWheel": 0,
+                }
+
+        if self.IRLeft == 1 and self.IRRight == 1 and self.IRCenter == 1:
+
+            if self.sonar > 50 or self.sonar < 1:
+                print "Il robot va avanti (sonar ci da' la conferma)"
+                # il robot si muove in avanti
+                self.decision = {
+                    "forward" : 1, #bool
+                    "back" : 0, #bool
+                    "speedLeftWheel": 125,
+                    "speedRightWheel": 155,
+                }
+            else: # il valore del sonar e' compreso fra 1 e 50
+                # il robot ruota piano piano verso sx
+                print "Il robot gira verso sx (sonar non ci da' la conferma di andare avanti)"
+                self.decision = {
+                    "forward" : 1, #bool
+                    "back" : 0, #bool
+                    "speedLeftWheel": 120, #e' in situazione di pericolo e si muove piano
+                    "speedRightWheel": 90,
+                }
+        print "\n"
         return str(self.decision)

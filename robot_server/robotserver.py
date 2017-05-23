@@ -19,7 +19,7 @@ Metodi:
 
 class RobotServer(object):
     def __init__(self):
-        self.HOST ='192.168.1.11'
+        self.HOST = '192.168.1.20'
         self.PORT = 1931
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # in order to prevent the "address already in use" error
