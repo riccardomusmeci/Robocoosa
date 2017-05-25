@@ -25,7 +25,7 @@ class RobotBrain(object):
         self.IRLeft = -1
         self.IRCenter = -1
         self.IRRight = -1
-
+        self.dangerDistance = 20
         self.decision = {
             "forward" : 0, #bool
             "back" : 0, #bool
@@ -68,29 +68,41 @@ class RobotBrain(object):
                 self.decision = {
                     "forward" : 0, #bool
                     "back" : 1, #bool
-                    "speedLeftWheel": 125,
+                    "speedLeftWheel": 140,
                     "speedRightWheel": 0,
                 }
 
         if self.IRLeft == 1 and self.IRRight == 1 and self.IRCenter == 1:
 
-            if self.sonar > 50 or self.sonar < 1:
+            if self.sonar > self.dangerDistance or self.sonar < 1:
                 print "Il robot va avanti (sonar ci da' la conferma)"
                 # il robot si muove in avanti
                 self.decision = {
                     "forward" : 1, #bool
                     "back" : 0, #bool
-                    "speedLeftWheel": 125,
+                    "speedLeftWheel": 120,
                     "speedRightWheel": 155,
                 }
-            else: # il valore del sonar e' compreso fra 1 e 50
+            else: # il valore del sonar e' compreso fra 1 e la distanza di soglia che indica un ostacolo
+                # il robot dovrebbe vedere se c'e' piu' spazio a sx o a dx per muoversi e poi decidere
+                print "*******ATTENZIONE*******"
+                print "Il robot deve calcolare le distanze verso sx e dx e decidere dove andare"
+                # decido che se sia back che forward sono ad 1 --> ho una fase di studio da parte del robot
+                self.decision = {
+                    "forward" : 1, #bool
+                    "back" : 1, #bool
+                    "speedLeftWheel": 0,
+                    "speedRightWheel": 0,
+                }
+                '''
                 # il robot ruota piano piano verso sx
                 print "Il robot gira verso sx (sonar non ci da' la conferma di andare avanti)"
                 self.decision = {
                     "forward" : 1, #bool
                     "back" : 0, #bool
-                    "speedLeftWheel": 120, #e' in situazione di pericolo e si muove piano
-                    "speedRightWheel": 90,
+                    "speedLeftWheel": 120, #e' in situazione di pericolo e si muove piano (?)
+                    "speedRightWheel": 85,
                 }
+                '''
         print "\n"
         return str(self.decision)

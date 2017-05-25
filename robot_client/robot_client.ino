@@ -8,7 +8,7 @@
 // #define SSID        "VodafoneMobileWiFi-E3D656"
 // #define PASSWORD    "2926693643"
 
-#define SERVER_NAME "192.168.1.20"
+#define SERVER_NAME "192.168.1.35"
 #define SERVER_PORT (1931)
 
 #define TRIGGER_PIN 50
@@ -162,6 +162,9 @@ void move(char* data){
   if(back == 1) {
     move_back(speedLeftWheel, speedRightWheel);
   }
+  if (forward == 1 && back == 1){
+    take_decision();
+  }
 
 }
 
@@ -186,3 +189,21 @@ void move_back(int speedLeftWheel, int speedRightWheel){
   digitalWrite(I4, LOW);
 
 }
+
+void take_decision(){
+  move_back(150, 0); // vado indietro e calcolo la distanza verso sx con il sonar
+  int sonar_value_left = sonar.ping_cm(); //prendo il valore del sonar a sx
+  delay(200);
+  move_forward(150, 0); // mi rimetto in posizione iniziale;
+  delay(200);
+  move_back(0, 150); // vado indietro per calcolare la distanza verso dx con il sonar;
+  int sonar_value_right = sonar.ping_cm();
+  delay(200);
+  if(sonar_value_left <= sonar_value_right){
+    move_back(150, 0); // mi giro verso sx
+  } else { 
+    move_back(0, 150); // mi giro verso dx 
+  }
+  delay(200);
+}
+
