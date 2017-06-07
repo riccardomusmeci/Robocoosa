@@ -2,13 +2,13 @@
 #include "ESP8266.h"
 #include <NewPing.h>
 
-#define SSID        "Telecom-56943924"
-#define PASSWORD    "lVGtZMVqI4XUQp5AWBcEHkQ7"
+//#define SSID        "Telecom-56943924"
+//#define PASSWORD    "lVGtZMVqI4XUQp5AWBcEHkQ7"
 
-// #define SSID        "VodafoneMobileWiFi-E3D656"
-// #define PASSWORD    "2926693643"
+ #define SSID        "VodafoneMobileWiFi-E3D656"
+ #define PASSWORD    "2926693643"
 
-#define SERVER_NAME "192.168.1.35"
+#define SERVER_NAME "192.168.0.101"
 #define SERVER_PORT (1931)
 
 #define TRIGGER_PIN 50
