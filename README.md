@@ -33,6 +33,9 @@ Riconosci oggetto
 Riconosce un oggetto consiste nell'analizzare un frame, e invocando le seguenti azioni:
   - detectObject();
   - detectArea();
+  - detectMarkerTriangle();
+  - detectMarkerCircle();
+  - detectMarkerSquare();
 
 Prendi oggetto
 Questa azione permette di poter prendere un oggetto che viene determinato. Gli step da considerare sono:
