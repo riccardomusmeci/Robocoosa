@@ -41,3 +41,14 @@ Questa azione permette di poter prendere un oggetto che viene determinato. Gli s
 
 Spostare l'oggetto nella zona target associata
 Questa funzione è una sorta di Muoversi, ma con posizione target differente.
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+PIN ARDUINO
+Right IR: Pin 22
+Back IR: Pin 24
+Left IR: Pin 26
+Front IR: Pin 28
+Servo Sonar: PWM 6
+Trigger Sonar: 50
+Trigger Echo: 51
