@@ -45,7 +45,7 @@ Costanti per la connessione con il server
 /*
 Parametri del server
 */
-#define SERVER_NAME "192.168.0.100"
+#define SERVER_NAME "192.168.0.101"
 #define SERVER_PORT (1931)
 
 /*
@@ -55,6 +55,9 @@ Servo myservo;
 //NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 ESP8266 wifi(Serial1, 115200);
 HMC5883L compass;
+
+// timer
+int t0 = 0;
 
 // infrarossi
 int IRLeftVal;
@@ -177,17 +180,28 @@ void analizzaDati(char* data){
     float angolo_target = jsonString["angolo_target"];
 
     if(avanti == 1){
+      t0 = millis();
       moveForward(ruota_sx, ruota_dx);
-      delay(200);
+      Serial.println("Vado avanti senza patemi d'animo");
+      while (millis() - t0 < 200){
+        IRBackVal = digitalRead(BACK_IR_PIN);
+        if(IRBackVal == 0){
+          Serial.println("Andando avanti ho incocciato l'ostacolo");
+          moveForward(0,0);
+        }
+      }
       moveForward(0, 0);
-      delay(500);
     }
     if(indietro == 1){      
       moveBack(ruota_sx, ruota_dx);
-      moveForward(ruota_sx, ruota_dx);
-      delay(200);
+      t0 = millis();
+      while (millis() - t0 < 200){
+        IRBackVal = digitalRead(BACK_IR_PIN);
+        if(IRBackVal == 0){
+          moveForward(0,0);
+        }
+      }
       moveForward(0, 0);
-      delay(500);
     } 
   }
 
@@ -214,7 +228,14 @@ void rotateRobot(int direzione, float angolo_finale){
             if(differenzaTraAngoli(angolo_attuale, angolo_finale)>5){
                 Serial.print("Continuo a ruotare verso dx, ho una differenza di angoli pari a ");
                 Serial.println(differenzaTraAngoli(angolo_attuale, angolo_finale));
-                moveForward(130, 0); 
+                moveForward(160, 0); 
+                t0 = millis();
+                while (millis() - t0 < 200){
+                  getSensorsData();
+                  if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRBackVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0)
+                    moveForward(0,0);
+                }
+                
             } else {
                 moveForward(0, 0);
                 break;
@@ -227,7 +248,13 @@ void rotateRobot(int direzione, float angolo_finale){
             if(differenzaTraAngoli(angolo_attuale, angolo_finale)>5){
                 Serial.print("Continuo a ruotare verso sx, ho una differenza di angoli pari a ");
                 Serial.println(differenzaTraAngoli(angolo_attuale, angolo_finale));
-                moveForward(0, 130); 
+                moveForward(0, 160); 
+                t0 = millis();
+                while (millis() - t0 < 200){
+                  getSensorsData();
+                  if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRBackVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0)
+                    moveForward(0,0);
+                }
             } else {
                 moveForward(0, 0);
                 break;
@@ -235,6 +262,7 @@ void rotateRobot(int direzione, float angolo_finale){
         }
     }
 }
+
 
 float differenzaTraAngoli(float a, float b){
   return abs(a-b);

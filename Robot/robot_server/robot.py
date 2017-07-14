@@ -6,7 +6,7 @@ class Robot(object):
 
     def __init__(self):
         print "Init server"
-        self.HOST = "192.168.0.100"
+        self.HOST = "192.168.0.101"
         self.PORT = 1931
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         '''
