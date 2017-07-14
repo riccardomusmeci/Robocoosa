@@ -7,19 +7,21 @@
 
 
 /*
-Pin del sonar
+Pin e costanti del sonar
 */
-#define TRIGGER_PIN 50
-#define ECHO_PIN 51
-#define MAX_DISTANCE 200
+//#define TRIGGER_PIN 50
+//#define ECHO_PIN 51
+//#define MAX_DISTANCE 200
 
 /*
 Pin degli infrarossi
 */
 #define RIGHT_IR_PIN 22
-#define BACK_IR_PIN 28
-#define LEFT_IR_PIN 26
+#define BACK_IR_PIN 26
+#define LEFT_IR_PIN 28
 #define FRONT_IR_PIN 24
+#define FRONT_IR_RIGHT 33
+#define FRONT_IR_LEFT 31
 
 /*
 Pin per il motore
@@ -34,50 +36,49 @@ Pin per il motore
 /*
 Costanti per la connessione con il server
 */
-#define SSID        "Telecom-56943924"
-#define PASSWORD    "lVGtZMVqI4XUQp5AWBcEHkQ7"
+//#define SSID        "Telecom-56943924"
+//#define PASSWORD    "lVGtZMVqI4XUQp5AWBcEHkQ7"
 
- // #define SSID        "VodafoneMobileWiFi-E3D656"
- // #define PASSWORD    "2926693643"
+#define SSID        "VodafoneMobileWiFi-E3D656"
+#define PASSWORD    "2926693643"
 
 /*
 Parametri del server
 */
-#define SERVER_NAME "192.168.1.58"
+#define SERVER_NAME "192.168.0.100"
 #define SERVER_PORT (1931)
 
+/*
+Costruttori per gli oggetti
+*/
 Servo myservo;
-NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
+//NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 ESP8266 wifi(Serial1, 115200);
 HMC5883L compass;
-
 
 // infrarossi
 int IRLeftVal;
 int IRFrontVal;
 int IRRightVal;
 int IRBackVal;
+int IRFrontDxVal;
+int IRFrontSxVal;
 // sonar
-int sonar_value_front;
-int sonar_value_right;
-int sonar_value_left;
+//int sonar_value;
 // compass
 float compass_value;
-
-// Questa variabile mi serve per capire se sono in una fase iniziale o meno
-int robot_init;
-
 // Variabile usata per i pacchetti JSON che il robot manda al server
-StaticJsonBuffer<200> jsonBuffer;
-String datiSensoriali = "{\"sonar_centro\":-1, \"sonar_sinistra\": -1, \"sonar_destra\": -1, \"IR_destra\": -1, \"IR_sinistra\": -1, \"IR_centro\": -1, \"IR_dietro\": -1, \"bussola\": -1}";
+
+StaticJsonBuffer<256> jsonBuffer;
+String datiSensoriali = "{\"sonar\":-1, \"IR_dx\": -1, \"IR_sx\": -1, \"IR_cdx\": -1, \"IR_c\": -1, \"IR_csx\": -1, \"IR_b\": -1, \"buss\": -1}";
 JsonObject& root = jsonBuffer.parseObject(datiSensoriali);
 
 void setup(){
-
-  myservo.attach(6);
-  myservo.write(90);
-
+  //myservo.attach(6);
+  //myservo.write(90);
   pinMode(FRONT_IR_PIN, INPUT);
+  pinMode(FRONT_IR_RIGHT, INPUT);
+  pinMode(FRONT_IR_LEFT, INPUT);
   pinMode(BACK_IR_PIN, INPUT);
   pinMode(LEFT_IR_PIN, INPUT);
   pinMode(RIGHT_IR_PIN, INPUT);
@@ -93,25 +94,20 @@ void setup(){
 
   wifiSetup();
   compassSetup();
-
-  robot_init = 0;
 }
 
 
 void loop(){
   
   createTCPConnection();
-  
   // Mando i dati sensoriali al server
   sendSensorDataToServer();
-  
   // Ricevo la risposta dal server
   char* comandoDaServer = receivingDataTCP();
   analizzaDati(comandoDaServer);
-  
   releaseTCPConnection();
-  delay(2000);
 }
+
 /***************************************************************************/
 /*
 Funzione per mandare i dati al server
@@ -122,7 +118,32 @@ void sendSensorDataToServer(){
   char dati_sensoriali[170];
   root.printTo(dati_sensoriali, sizeof(dati_sensoriali));
   wifi.send(dati_sensoriali, strlen(dati_sensoriali));
-  Serial.println("Dati inviati");
+  
+}
+
+void getSensorsData(){
+  
+  //sonar_value = sonar.convert_cm(sonar.ping_median());
+
+  IRLeftVal = digitalRead(LEFT_IR_PIN);
+  IRFrontVal = digitalRead(FRONT_IR_PIN);
+  IRRightVal = digitalRead(RIGHT_IR_PIN);
+  IRBackVal = digitalRead(BACK_IR_PIN);
+  IRFrontDxVal = digitalRead(FRONT_IR_RIGHT);
+  IRFrontSxVal = digitalRead(FRONT_IR_LEFT);
+  
+  compass_value = getDegreeFromCompass();
+
+  //root["sonar"] = sonar_value;
+  root["sonar"] = -1;
+  root["IR_dx"] = IRRightVal;
+  root["IR_c"] = IRFrontVal;
+  root["IR_b"] = IRBackVal;
+  root["IR_sx"] = IRLeftVal;
+  root["IR_cdx"] = IRFrontDxVal;
+  root["IR_csx"] = IRFrontSxVal;
+  root["buss"] = compass_value;
+  root.printTo(Serial);
 }
 
 /***************************************************************************/
@@ -133,174 +154,89 @@ void analizzaDati(char* data){
   
   StaticJsonBuffer<128> jsonStringBuffer;
   JsonObject& jsonString = jsonStringBuffer.parseObject(data);
-  
   if(!jsonString.success()) {
     Serial.println("parseObject() failed");
     return;
-  } 
-  
-  char* azione = jsonString["azione"];
-  Serial.println(azione);
-  
-  if(strcmp(azione, "movimento") == 0) {
-    char* move = jsonString["direzione"];
-    if(strcmp(move, "davanti") == 0) {
-      Serial.println("Mi muovo verso avanti");
-      moveForward(225, 250);
-      delay(500);
-      moveForward(0, 0);
-    }
-    if(strcmp(move, "destra") == 0) {
-      Serial.println("Mi muovo verso destra");
-      rotateRobot(1, 60); //ruoto verso dx
-      moveForward(225, 250); 
-      delay(1500);
-      moveForward(0, 0);
-      delay(1000);
-    }
-    if(strcmp(move, "sinistra") == 0) {
-      Serial.println("Mi muovo verso sinistra");
-      rotateRobot(0, -60); //ruoto verso sx
-      moveForward(225, 250);
-      delay(1500);
-      moveForward(0, 0);
-      delay(1000);
-    }
   }
-}
-
-
-/***************************************************************************/
-/*
-Funzioni per la gestione dei sensori
-*/
-void getSensorsData(){
-  Serial.println("\nACQUISIZIONE DATI");
-  Serial.println("\nAcquisisco i dati davanti");
-  sonar_value_front = sonar.ping_cm();
-  delay(1000);
-
-  Serial.println("Acquisisco i dati a sinistra");
-  myservo.write(0);
-  delay(500);
-  sonar_value_left = sonar.ping_cm();
-  delay(1000);
-
-  Serial.println("Acquisisco i dati a destra");
-  myservo.write(180);
-  delay(500);
-  sonar_value_right = sonar.ping_cm();
-  delay(1000);
-  myservo.write(90);
-
-  IRLeftVal = digitalRead(LEFT_IR_PIN);
-  IRFrontVal = digitalRead(FRONT_IR_PIN);
-  IRRightVal = digitalRead(RIGHT_IR_PIN);
-  IRBackVal = digitalRead(BACK_IR_PIN);
+  char* azione = jsonString["azione"];
   
-  compass_value = getDegreeFromCompass();
+  if(strcmp(azione, "rotazione") == 0) {
+    moveForward(0, 0);
+    float angolo_target = jsonString["angolo_target"];
+    int verso = jsonString["verso_rot"]; 
+    rotateRobot(verso, angolo_target);
+    return;
+  }
 
-  root["azione"] = "percezione";
-  root["sonar_centro"] = sonar_value_front;
-  root["sonar_destra"] = sonar_value_right;
-  root["sonar_sinistra"] = sonar_value_left;
-  root["IR_destra"] = IRRightVal;
-  root["IR_centro"] = IRFrontVal;
-  root["IR_dietro"] = IRBackVal;
-  root["IR_sinistra"] = IRLeftVal;
-  root["bussola"] = compass_value;
-  Serial.println("Ho preso i dati sensoriali");
-}
+  if(strcmp(azione, "movimento") == 0){
+    int avanti = jsonString["avanti"];
+    int indietro = jsonString["indietro"];
+    int ruota_sx = jsonString["v_ruota_sx"];
+    int ruota_dx = jsonString["v_ruota_dx"];  
+    int verso = jsonString["verso"]; 
+    float angolo_target = jsonString["angolo_target"];
 
-void printSensorsData(){
-  Serial.println("\nStampo i dati dei sensori");
-
-  Serial.println("Sonar");
-  Serial.print("Destra: ");
-  Serial.print(sonar_value_right);
-  Serial.print("\tSinistra: ");
-  Serial.print(sonar_value_left);
-  Serial.print("\tDavanti: ");
-  Serial.print(sonar_value_front);
-
-  Serial.println("\nInfrarossi");
-  Serial.print("Destra: ");
-  Serial.print(IRRightVal);
-  Serial.print("\tSinistra: ");
-  Serial.print(IRLeftVal);
-  Serial.print("\tDavanti: ");
-  Serial.print(IRFrontVal);
-  Serial.print("\tDietro: ");
-  Serial.print(IRBackVal);
+    if(avanti == 1){
+      moveForward(ruota_sx, ruota_dx);
+      delay(200);
+      moveForward(0, 0);
+      delay(500);
+    }
+    if(indietro == 1){      
+      moveBack(ruota_sx, ruota_dx);
+      moveForward(ruota_sx, ruota_dx);
+      delay(200);
+      moveForward(0, 0);
+      delay(500);
+    } 
+  }
 
 }
+
+
 
 /***************************************************************************/
 /*
 Funzioni per la gestione delle ruote
 */
-// dir puo' essere: 1 per dx, 0 per sx
-void rotateRobot(int dir, int angle){
-  
-  float startD = getDegreeFromCompass();
-  float finalD = startD + angle;
-  
-  if(finalD >= 360){
-    finalD = finalD - 359;
-  }
-  if(finalD<=0){
-    finalD = finalD + 359;
-  }
-  Serial.print("Posizione iniziale angolare: ");
-  Serial.println(startD);
-  Serial.print("Rotazione desiderata: ");
-  Serial.println(angle);
-  Serial.print("Posizione finale angolare: ");
-  Serial.println(finalD);
-  //rotazione verso dx
-  if(dir == 1) {
-    while(true) {
-      startD=getDegreeFromCompass();
-      Serial.print("Ruoto il robot verso dx, mancano: ");
-      Serial.println(error(startD, finalD));
-      if(error(startD, finalD)<5){
-        moveForward(0, 0);
-        Serial.println("Raggiunta posizione che cercavo verso dx");
-        break;
-      } else {
-        moveForward(250, 0);
-        delay(30);
-        moveBack(0, 250);
-        delay(30);
-        moveForward(0, 0);
-        delay(100);
-      }
+void rotateRobot(int direzione, float angolo_finale){
+    /*
+    direzione == 1 --> ruoto verso dx
+    direzione == 0 --> ruoto verso sx
+    */
+    if(direzione==-1){
+      return;
     }
-  }
-  if(dir == 0) {
-    while(true) {
-      startD = getDegreeFromCompass();
-      Serial.print("Ruoto il robot verso sx, mancano: ");
-      Serial.println(error(startD, finalD));
-      if(error(startD, finalD)<5){
-        moveForward(0, 0);
-        Serial.println("Raggiunta posizione che cercavo verso sx");
-        break;
-      } else {
-        moveForward(0, 250);
-        delay(30);
-        moveBack(250,0);
-        delay(30);
-        moveForward(0, 0);
-        delay(100);
-      }
+    float angolo_attuale = getDegreeFromCompass();
+    if(direzione == 1){
+        while(1){
+            angolo_attuale = getDegreeFromCompass();
+            if(differenzaTraAngoli(angolo_attuale, angolo_finale)>5){
+                Serial.print("Continuo a ruotare verso dx, ho una differenza di angoli pari a ");
+                Serial.println(differenzaTraAngoli(angolo_attuale, angolo_finale));
+                moveForward(130, 0); 
+            } else {
+                moveForward(0, 0);
+                break;
+            }
+        }
     }
-  }
-  
-  
+    if(direzione == 0){
+        while(1){
+            angolo_attuale = getDegreeFromCompass();
+            if(differenzaTraAngoli(angolo_attuale, angolo_finale)>5){
+                Serial.print("Continuo a ruotare verso sx, ho una differenza di angoli pari a ");
+                Serial.println(differenzaTraAngoli(angolo_attuale, angolo_finale));
+                moveForward(0, 130); 
+            } else {
+                moveForward(0, 0);
+                break;
+            }
+        }
+    }
 }
 
-float error(float a, float b){
+float differenzaTraAngoli(float a, float b){
   return abs(a-b);
 }
 

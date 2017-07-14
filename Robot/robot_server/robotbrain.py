@@ -1,198 +1,252 @@
-from A_star import AStar
-import time 
+import numpy as np
 
 class RobotBrain(object):
     '''
-    E' la classe che si occupa della parte decisionale del robot.
-    
-    Attributi:
-        reply (dict): e' un dizionario che contiene l'azione che il robot deve compiere. 
-                      In futuro sono previsti ampliamenti per la fase di avvicinamento ad un oggetto
-        heading (stringa): indica dove punta il davanti del robot
-        startPosition (tupla): indica la posizione iniziale del robot
-        goalPosition (tupla): indica la posizione finale del robot
-        astar (AStar): e' l'attributo che lancia una ricerca A Star sulla mappa a disposizione
-        stepsToGoal (list): lista di celle che il robot deve attraversare per arrivare al goal
-        newStartForAStar (tupla): nuova posizione iniziale del robot, che deve raggiungere
-    '''
+    E' la classe che si occupa della parte decisionale del robot
 
+    Attributi:
+        modalita (str): e' una stringa che contiene la modalita di lavoro del robot (init, movimento, avvicinamento)
+        datiSensoriali (dict): dati sensoriali del mondo che vengono aggiornati da quello che manda il robot
+        reply (dict): contiene la risposta del server
+        DANGERDISTANCE (int): e' il limite di distanza oltre il quale bisogna virare
+    '''
     def __init__(self):
-        self.heading = "davanti"
-        self.startPosition = (9, 0)
-        self.goalPosition = (0, 9)
-        self.reply = None
-        self.astar = AStar()
-        self.initAStar()
-        self.newStartForAStar = None
-        
-    
-    def initAStar(self):
+        self.modalita = "init"
+        self.datiSensoriali = {
+            "sonar":-1,
+            "IR_dx": -1,
+            "IR_sx": -1,
+            "IR_cdx": -1,
+            "IR_c": -1,
+            "IR_csx": -1,
+            "IR_b": -1,
+            "buss": -1,
+        }
+        self.comingFrom = "avanti"
+        self.stepOltreOstacoli = 0
+        self.reply = {}
+        self.DANGERDISTANCE = 40
+        self.BUSSOLA = 100 # devo inizializzare
         '''
-        Metodo che inizializza le strutture dati per la ricerca A star
+        Per quanto riguarda gli altri angoli abbiamo:
+        - angolo verso area verde/blu: 328
+        - angolo verso area rossa: 241 
         '''
-        self.astar.mappa.initCells([], self.startPosition, self.goalPosition)
-        self.stepsToGoal = []
-    
+
     def analyzeData(self, dati):
         '''
-        Metodo che analizza i dati sensoriali che gli arrivano dal robot
+        Metodo che analizza i dati sensoriali passati come input, prendendo una decisione.
 
-        @param dati (str): stringa di caratteri che contiene i dati sensoriali (viene convertita in dict)
+        @param dati (str): stringa di caratteri che contiene i dati sensoriali comunicati dal robot
         '''
-        print "Sono dentro analyzeData"
-        datiSensoriali = eval(dati)
-        print datiSensoriali
+        self.datiSensoriali = dati
+        print "\n"
+        print "DATI SENSORIALI"
+        print self.datiSensoriali
+        print "\n"
         
-        '''
-        Con self.takeDecision(...), ottengo la prossima cella da visitare e la memorizzo
-        in self.newStartForAStar
-        '''
-        self.takeDecision(datiSensoriali)
-        move = self.understandMoveToDo()
-        if move is None:
-            print "QUALCHE PROBLEMA IN FASE DI PROGETTAZIONE"
-            return None
-
+        if self.modalita == "movimento":
+            self.takeDecision()
+        if self.modalita == "init":
+            self.initRobot()
+    
+    def initRobot(self):
+        self.modalita = "movimento"
+        verso = -1
+        differenza_angoli = int(self.datiSensoriali['buss'] - self.BUSSOLA)
+        print "La differenza fra l'angolo target e quello finale e': ", differenza_angoli
+        if differenza_angoli in np.arange(-10,-100, -1) or differenza_angoli in np.arange(170, 259, 1):
+            verso = 1
+            print "ruota a sx per metterlo in posizione iniziale"
+        else:
+            if differenza_angoli in np.arange(10,180, 1):
+                verso = 0
+                print "ruota a dx per metterlo in posizione iniziale"
         self.reply = {
-            "azione": "movimento",
-            "direzione": move
+            'azione': 'rotazione',
+            'verso_rot': verso,
+            'angolo_target': self.BUSSOLA
         }
         
-        print "Adesso il robot punta verso ", self.heading
-        self.startPosition = self.newStartForAStar
+        
+    def takeDecision(self):
+        #if self.datiSensoriali["IR_csx"]==1 and self.datiSensoriali["IR_cdx"]==1 and self.datiSensoriali["IR_dx"]==1 and self.datiSensoriali["IR_sx"] == 1:
+        if self.datiSensoriali["IR_b"] == 1 and self.datiSensoriali["IR_c"] == 1 and self.datiSensoriali["IR_csx"]==1 and self.datiSensoriali["IR_cdx"]==1 and self.datiSensoriali["IR_dx"]==1 and self.datiSensoriali["IR_sx"] == 1:
+            #if self.datiSensoriali["sonar"] < 1150 or self.datiSensoriali["sonar"] < 1 or self.datiSensoriali["sonar"] > self.DANGERDISTANCE :
+            '''
+            Se la strada e' libera, allora vai sempre avanti
+            '''
+            #Vedo di quanto deve ruotare il robot, e verso dove, per mantenere la direzione verso gli oggetti
+            verso = -1
+            differenza_angoli = int(self.datiSensoriali['buss'] - self.BUSSOLA)
+            #se l'angolo a cui si trova il robot rispetto a quello target e' buono, allora vai semplicemente avanti
+            #altrimenti prima ti aggiusti con una rotazione e dopo riparti
+            if differenza_angoli in np.arange(11, -11, -1):
+                self.comingFrom = "avanti"
+                print "Il robot puo' andare avanti liberamente"
+                self.reply = {
+                    'azione': 'movimento',
+                    'avanti': 1,
+                    'indietro': 0,
+                    'v_ruota_sx': 160,
+                    'v_ruota_dx': 160,
+                    'angolo_target': self.BUSSOLA, #verso_rot e angolo_ target non sono importanti, li mando per uniformita' di pkt
+                    'verso_rot': verso
+                }
+                return
+            else:
+                if self.comingFrom == "ostacolo":
+                    if self.stepOltreOstacoli == 3:
+                        self.comingFrom = "avanti"
+                        self.stepOltreOstacoli = 0
+                    else:
+                        self.stepOltreOstacoli += 1
+                    #self.comingFrom = "avanti"
+                    #se vengo da un ostacolo e' inutile che mi oriento di nuovo, piuttosto lo faccio andare avanti
+                    print "Vengo da un ostacolo, dovrei poter ruotare per ritrovare la posizione, ma preferisco prima andare un po' avanti"
+                    self.reply = {
+                    'azione': 'movimento',
+                    'avanti': 1,
+                    'indietro': 0,
+                    'v_ruota_sx': 150,
+                    'v_ruota_dx': 150,
+                    'angolo_target': self.BUSSOLA, #verso_rot e angolo_ target non sono importanti, li mando per uniformita' di pkt
+                    'verso_rot': verso
+                    }
+                    return
                 
-    
-    
-    def takeDecision(self, datiSensoriali):
-        '''
-        Metodo che esegue AStar, ottenendo, in base ai dati sensoriali, 
-        la prossima mossa da fare.
-
-        @param datiSensoriali (dict): dizionario contenente i dati sensoriali
-        '''
-        print "Il robot punta verso ", self.heading
-        datiSensorialiFromHeading = self.modifyDataBecauseHeading(datiSensoriali)
-        print datiSensorialiFromHeading
-        ostacoli = self.astar.percepisciOstacoli(self.newStartForAStar, datiSensorialiFromHeading)
-        print ostacoli
-        self.astar.mappa.setOstacoli(ostacoli)
-        self.astar.mappa.printMappa()
-        self.astar.search()
-        self.newStartForAStar = (self.astar.pathToGoal[0].x, self.astar.pathToGoal[0].y)
-        new_goal = None
-        self.astar.recharge(self.newStartForAStar, new_goal)
+                else:
+                    # il passo precedente e' stato in avanti, quindi mi posso orientare di nuovo
+                    print "Posso riorientarmi verso l'angolo target liberamente"
+                    if self.BUSSOLA == 100:
+                        print "La differenza fra l'angolo target e quello finale e': ", differenza_angoli
+                        if differenza_angoli in np.arange(-10,-100, -1) or differenza_angoli in np.arange(170, 259, 1):
+                            verso = 1
+                            print "Il robot ruota a sx per mantere la direzione verso l'obiettivo"
+                        else:
+                            if differenza_angoli in np.arange(10,180, 1):
+                                verso = 0
+                                print "Il robot ruota a sx per mantere la direzione verso l'obiettivo"
+                        self.reply = {
+                            'azione': 'rotazione',
+                            'verso_rot': verso,
+                            'angolo_target': self.BUSSOLA
+                        }
+                        return
+        # se arrivo qua vuol dire che ho qualche ostacolo vicino
+        self.comingFrom = "ostacolo"   
         
-   
-    def modifyDataBecauseHeading(self, datiSensoriali):
-        '''
-        Metodo che aggiusta i dati sensoriali in base a dove punta il davanti del robot, specificato da heading.abs
-
-        @param datiSensoriali (dict): dizionario contenente i dati sensoriali
-
-        @returns un dizionario contenente le informazioni dei sonar davanti, dietro, destra e sinistra in base al heading
-        '''
-
-        if self.heading == "davanti":
-            return {
-                'davanti': datiSensoriali["sonar_centro"],
-                'dietro': None,
-                'destra': datiSensoriali["sonar_destra"],
-                'sinistra': datiSensoriali["sonar_sinistra"]
+        if (self.datiSensoriali["IR_b"] == 0) and (self.datiSensoriali["IR_dx"] == 0 or self.datiSensoriali["IR_cdx"] == 0):
+            print "Il robot ha un ostacolo ad L sulla dx, devo girare indietro con la ruota sx"
+            self.reply = {
+                'azione': 'movimento',
+                'avanti': 0,
+                'indietro': 1,
+                'v_ruota_sx': 130,
+                'v_ruota_dx': 0,
+                'angolo': self.BUSSOLA,
             }
+            return  
         
-        if self.heading == "destra":
-            destra = datiSensoriali["sonar_centro"]
-            dietro = datiSensoriali["sonar_destra"]
-            davanti = datiSensoriali["sonar_sinistra"]
-            return {
-                'davanti': davanti,
-                'dietro': dietro,
-                'destra': destra,
-                'sinistra': None
+        if (self.datiSensoriali["IR_b"] == 0) and (self.datiSensoriali["IR_sx"] == 0 and self.datiSensoriali["IR_csx"] == 0):
+            print "Il robot ha un ostacolo ad L sulla sx, devo girare indietro con la ruota dx"
+            self.reply = {
+                'azione': 'movimento',
+                'avanti': 0,
+                'indietro': 1,
+                'v_ruota_sx': 0,
+                'v_ruota_dx': 130,
+                'angolo': self.BUSSOLA,
             }
+            return 
+        
+        if self.datiSensoriali["IR_dx"] == 0 or self.datiSensoriali["IR_cdx"] == 0:
+            print "Il robot ha un ostacolo sulla dx, devo girare indietro con la ruota sx"
+            self.reply = {
+                'azione': 'movimento',
+                'avanti': 0,
+                'indietro': 1,
+                'v_ruota_sx': 130,
+                'v_ruota_dx': 0,
+                'angolo': self.BUSSOLA,
+            }
+            return   
+        
+        if self.datiSensoriali["IR_sx"] == 0 or self.datiSensoriali["IR_csx"] == 0:
+            print "Il robot ha un ostacolo sulla sx, devo girare indietro con la ruota dx"
+            self.reply = {
+                'azione': 'movimento',
+                'avanti': 0,
+                'indietro': 1,
+                'v_ruota_sx': 0,
+                'v_ruota_dx': 130,
+                'angolo': self.BUSSOLA,
+            }
+            return
+        
+        if self.datiSensoriali["IR_b"] == 0:
+            if self.BUSSOLA == 100:
+                print "Il robot ha un ostacolo solo davanti, devo girare indietro con la ruota sx, scelta per l'angolo target ", self.BUSSOLA
+                self.reply = {
+                    'azione': 'movimento',
+                    'avanti': 0,
+                    'indietro': 1,
+                    'v_ruota_sx': 130,
+                    'v_ruota_dx': 0,
+                    'angolo': self.BUSSOLA,
+                }
+                return
+
+
+
+
+
+
+
+
+
+
+        '''
+        # Se mi trovo un ostacolo davanti
+        if self.datiSensoriali["IR_b"] == 0:
+            self.reply = {
+                        'azione': 'movimento',
+                        'avanti': 0,
+                        'indietro': 1,
+                        'v_ruota_sx': 0,
+                        'v_ruota_dx': 180,
+                        'angolo': self.BUSSOLA,
+                    }
+            return
+        
+        #Il robot rileva ostacoli, deve prendere una decisione
+        if self.datiSensoriali["IR_c"] == 0 or self.datiSensoriali["IR_b"] == 0 or self.datiSensoriali["IR_sx"] == 0 or self.datiSensoriali["IR_dx"] == 0 or self.datiSensoriali["IR_csx"] == 0 or self.datiSensoriali["IR_cdx"] == 0:
+            #Se il robot e' occluso davanti e a sx (ostacolo ad L a sx), allora ruota di 90 a destra
+            if self.datiSensoriali["IR_b"] == 0 or self.datiSensoriali["IR_c"] or (self.datiSensoriali["IR_sx"] == 0 or self.datiSensoriali["IR_csx"] == 0):
+                self.reply = {
+                        'azione': 'movimento',
+                        'avanti': 0,
+                        'indietro': 1,
+                        'v_ruota_sx': 0,
+                        'v_ruota_dx': 180,
+                        'angolo': self.BUSSOLA,
+                    }
+                return
+            #Se il robot e' occluso davanti e a dx (ostacolo ad L a dx), allora ruota di 90 a sx
+            print "Il robot ha il lato destro che rileva ostacoli, ci muoviamo all'indietro e andiamo verso sx"
+            if self.datiSensoriali["IR_b"] == 0 or self.datiSensoriali["IR_c"] or (self.datiSensoriali["IR_dx"] == 0 or self.datiSensoriali["IR_cdx"] == 0):
+                self.reply = {
+                        'azione': 'movimento',
+                        'avanti': 0,
+                        'indietro': 1,
+                        'v_ruota_sx': 180,
+                        'v_ruota_dx': 0,
+                        'angolo': self.BUSSOLA,
+                    }
+                return
+        '''
+                
+
+
+
             
-        if self.heading == "sinistra":
-            sinistra = datiSensoriali["sonar_centro"]
-            dietro = datiSensoriali["sonar_sinistra"]
-            davanti = datiSensoriali["sonar_destra"]
-            return {
-                'davanti': davanti,
-                'dietro': dietro,
-                'destra': None,
-                'sinistra': sinistra
-            }
-        if self.heading == "dietro":
-            return {
-                'dietro': datiSensoriali["sonar_centro"],
-                'davanti': None,
-                'sinistra': datiSensoriali["sonar_destra"],
-                'destra': datiSensoriali["sonar_sinistra"]
-            }
-    
-    
-    def understandMoveToDo(self):
-        '''
-        Metodo che restituisce la mossa da fare in base alla posizione attuale e la prossima da raggiungere
-
-        @returns move (str): stringa che puo' essere 'avanti', 'destra', 'sinistra'
-        '''
-        x = self.newStartForAStar[0] - self.startPosition[0]
-        y = self.newStartForAStar[1] - self.startPosition[1]
-        print "Differenza fra la posizione iniziale, " + str(self.startPosition) + " e la successiva," + str(self.newStartForAStar) + " e': ", (x, y)
-        move = None
-        if self.heading == "davanti":
-            print "Sono in davanti, cerco di capire la mossa"
-            if x<0:
-                move = "davanti"
-                self.heading = "davanti"
-            if y<0:
-                move = "sinistra"
-                self.heading = "sinistra"
-            if y>0:
-                move = "destra"
-                self.heading = "destra"
-            print move
-            return move
-        if self.heading == "destra":
-            print "Sono in destra, cerco di capire la mossa"
-            if y>0:
-                move = "davanti"
-                self.heading = "destra"
-            if x>0:
-                move = "destra"
-                self.heading = "dietro"
-            if x<0:
-                move = "sinistra"
-                self.heading = "davanti"
-            print move
-            return move
-        if self.heading == "sinistra":
-            print "Sono in sinistra, cerco di capire la mossa"
-            if y<0:
-                move = "davanti"
-                self.heading = "sinistra"
-            if x<0:
-                move = "destra"
-                self.heading = "davanti"
-            if x>0:
-                move = "sinistra"
-                self.heading = "dietro"
-            print move
-            return move
-        if self.heading == "dietro":
-            print "Sono in dietro, cerco di capire la mossa"
-            if x>0:
-                move = "davanti"
-                self.heading = "dietro"
-            if y<0:
-                move = "destra"
-                self.heading = "sinistra"
-            if y>0:
-                move = "sinistra"
-                self.heading = "destra"
-            print move
-            return move
-        return move
-                
-
-

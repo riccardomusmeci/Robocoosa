@@ -21,11 +21,11 @@ class RobotBrain(object):
 
     def __init__(self):
         # in futuro potremmo inizializzare mappe e dati sensoriali, in modo tale da avere dei metodi che operano sui dati costantemente aggiornati
-        self.sonar = -1
-        self.IRLeft = -1
-        self.IRCenter = -1
-        self.IRRight = -1
-        self.dangerDistance = 20
+        self.sonar_c = -1
+        self.IR_sx = -1
+        self.IR_c = -1
+        self.IR_dx = -1
+        self.DANGERDISTANCE = 20
         self.decision = {
             "forward" : 0, #bool
             "back" : 0, #bool
@@ -43,17 +43,17 @@ class RobotBrain(object):
         print "\n"
         print "**********DATI SENSORIALI***********"
         print data
-        self.sonar = data['sonar']
-        self.IRLeft = data['IRLeft']
-        self.IRRight = data['IRRight']
-        self.IRCenter = data['IRCenter']
+        self.sonar_c = data['sonar_c']
+        self.IR_sx = data['IR_sx']
+        self.IR_dx = data['IR_dx']
+        self.IR_c = data['IR_c']
 
 
     def getDecision(self):
 
-        if self.IRLeft == 0 or self.IRRight == 0 or self.IRCenter == 0:
+        if self.IR_sx == 0 or self.IR_dx == 0 or self.IR_c == 0:
 
-            if self.IRLeft == 0 or self.IRCenter == 0:
+            if self.IR_sx == 0 or self.IR_c == 0:
                 # il robot ruota da dx verso sx (anche nel caso in cui e' bloccato in centro)
                 print "Il robot va indietro e ruota da dx verso sx (ha IR a sx oppure centro occupati)"
                 self.decision = {
@@ -63,7 +63,7 @@ class RobotBrain(object):
                     "speedRightWheel": 125,
                 }
             # il robot ruota da sx verso dx
-            if self.IRRight == 0:
+            if self.IR_dx == 0:
                 print "Il robot va indietro e ruota da sx verso dx (ha IR a dx occupato)"
                 self.decision = {
                     "forward" : 0, #bool
@@ -72,9 +72,9 @@ class RobotBrain(object):
                     "speedRightWheel": 0,
                 }
 
-        if self.IRLeft == 1 and self.IRRight == 1 and self.IRCenter == 1:
+        if self.IR_sx == 1 and self.IR_dx == 1 and self.IR_c == 1:
 
-            if self.sonar > self.dangerDistance or self.sonar < 1:
+            if self.sonar_c > self.DANGERDISTANCE or self.sonar_c < 1:
                 print "Il robot va avanti (sonar ci da' la conferma)"
                 # il robot si muove in avanti
                 self.decision = {
