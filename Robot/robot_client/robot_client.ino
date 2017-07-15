@@ -1,38 +1,29 @@
 #include <Servo.h>
-#include <NewPing.h>
 #include "ESP8266.h"
 #include <Wire.h>
 #include <HMC5883L.h>
 #include <ArduinoJson.h>
 
-
 /*
-Pin e costanti del sonar
+Pin Motori
 */
-//#define TRIGGER_PIN 50
-//#define ECHO_PIN 51
-//#define MAX_DISTANCE 200
+#define ENA 8
+#define ENB 13
+#define IN1 9
+#define IN2 10
+#define IN3 11
+#define IN4 12
 
 /*
 Pin degli infrarossi
 */
-#define RIGHT_IR_PIN 22
-#define BACK_IR_PIN 26
-#define LEFT_IR_PIN 28
-#define FRONT_IR_PIN 24
-#define FRONT_IR_RIGHT 33
-#define FRONT_IR_LEFT 31
 
-/*
-Pin per il motore
-*/
-#define E1 8
-#define E2 13
-#define I1 9
-#define I2 10
-#define I3 11
-#define I4 12
-
+#define RIGHT_IR_PIN 30
+#define TOP_IR_PIN 32
+#define LEFT_IR_PIN 22
+#define FRONT_IR_PIN 26
+#define FRONT_IR_RIGHT 28
+#define FRONT_IR_LEFT 24
 /*
 Costanti per la connessione con il server
 */
@@ -45,60 +36,59 @@ Costanti per la connessione con il server
 /*
 Parametri del server
 */
-#define SERVER_NAME "192.168.0.101"
+#define SERVER_NAME "192.168.0.100"
 #define SERVER_PORT (1931)
 
 /*
 Costruttori per gli oggetti
 */
 Servo myservo;
-//NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 ESP8266 wifi(Serial1, 115200);
 HMC5883L compass;
 
 // timer
-int t0 = 0;
+uint8_t t0 = 0;
 
 // infrarossi
 int IRLeftVal;
 int IRFrontVal;
 int IRRightVal;
-int IRBackVal;
+int IRTopVal;
 int IRFrontDxVal;
 int IRFrontSxVal;
-// sonar
-//int sonar_value;
+
 // compass
 float compass_value;
-// Variabile usata per i pacchetti JSON che il robot manda al server
 
+// Variabile usata per i pacchetti JSON che il robot manda al server
 StaticJsonBuffer<256> jsonBuffer;
-String datiSensoriali = "{\"sonar\":-1, \"IR_dx\": -1, \"IR_sx\": -1, \"IR_cdx\": -1, \"IR_c\": -1, \"IR_csx\": -1, \"IR_b\": -1, \"buss\": -1}";
+String datiSensoriali = "{\"IR_dx\": -1, \"IR_sx\": -1, \"IR_cdx\": -1, \"IR_c\": -1, \"IR_csx\": -1, \"IR_t\": -1, \"buss\": -1}";
 JsonObject& root = jsonBuffer.parseObject(datiSensoriali);
 
 void setup(){
-  //myservo.attach(6);
-  //myservo.write(90);
+  myservo.attach(6);
+  myservo.write(0);
   pinMode(FRONT_IR_PIN, INPUT);
   pinMode(FRONT_IR_RIGHT, INPUT);
   pinMode(FRONT_IR_LEFT, INPUT);
-  pinMode(BACK_IR_PIN, INPUT);
+  pinMode(TOP_IR_PIN, INPUT);
   pinMode(LEFT_IR_PIN, INPUT);
   pinMode(RIGHT_IR_PIN, INPUT);
 
-  pinMode(E1, OUTPUT);
-  pinMode(E2, OUTPUT);
-  pinMode(I1, OUTPUT);
-  pinMode(I2, OUTPUT);
-  pinMode(I3, OUTPUT);
-  pinMode(I4, OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
 
   Serial.begin(115200);
 
   wifiSetup();
   compassSetup();
-}
 
+  fermati();
+}
 
 void loop(){
   
@@ -107,7 +97,7 @@ void loop(){
   sendSensorDataToServer();
   // Ricevo la risposta dal server
   char* comandoDaServer = receivingDataTCP();
-  analizzaDati(comandoDaServer);
+  analizzaComando(comandoDaServer);
   releaseTCPConnection();
 }
 
@@ -121,174 +111,262 @@ void sendSensorDataToServer(){
   char dati_sensoriali[170];
   root.printTo(dati_sensoriali, sizeof(dati_sensoriali));
   wifi.send(dati_sensoriali, strlen(dati_sensoriali));
-  
 }
-
+  
 void getSensorsData(){
   
-  //sonar_value = sonar.convert_cm(sonar.ping_median());
-
   IRLeftVal = digitalRead(LEFT_IR_PIN);
   IRFrontVal = digitalRead(FRONT_IR_PIN);
   IRRightVal = digitalRead(RIGHT_IR_PIN);
-  IRBackVal = digitalRead(BACK_IR_PIN);
+  IRTopVal = digitalRead(TOP_IR_PIN);
   IRFrontDxVal = digitalRead(FRONT_IR_RIGHT);
   IRFrontSxVal = digitalRead(FRONT_IR_LEFT);
   
   compass_value = getDegreeFromCompass();
 
-  //root["sonar"] = sonar_value;
-  root["sonar"] = -1;
   root["IR_dx"] = IRRightVal;
   root["IR_c"] = IRFrontVal;
-  root["IR_b"] = IRBackVal;
+  root["IR_t"] = IRTopVal;
   root["IR_sx"] = IRLeftVal;
   root["IR_cdx"] = IRFrontDxVal;
   root["IR_csx"] = IRFrontSxVal;
   root["buss"] = compass_value;
   root.printTo(Serial);
+  Serial.print("\n");
 }
 
-/***************************************************************************/
-/*
-Funzioni per estrapolare i dati mandati dal server
-*/
-void analizzaDati(char* data){
-  
-  StaticJsonBuffer<128> jsonStringBuffer;
-  JsonObject& jsonString = jsonStringBuffer.parseObject(data);
-  if(!jsonString.success()) {
-    Serial.println("parseObject() failed");
-    return;
-  }
-  char* azione = jsonString["azione"];
-  
-  if(strcmp(azione, "rotazione") == 0) {
-    moveForward(0, 0);
-    float angolo_target = jsonString["angolo_target"];
-    int verso = jsonString["verso_rot"]; 
-    rotateRobot(verso, angolo_target);
-    return;
-  }
-
-  if(strcmp(azione, "movimento") == 0){
-    int avanti = jsonString["avanti"];
-    int indietro = jsonString["indietro"];
-    int ruota_sx = jsonString["v_ruota_sx"];
-    int ruota_dx = jsonString["v_ruota_dx"];  
-    int verso = jsonString["verso"]; 
-    float angolo_target = jsonString["angolo_target"];
-
-    if(avanti == 1){
-      t0 = millis();
-      moveForward(ruota_sx, ruota_dx);
-      Serial.println("Vado avanti senza patemi d'animo");
-      while (millis() - t0 < 200){
-        IRBackVal = digitalRead(BACK_IR_PIN);
-        if(IRBackVal == 0){
-          Serial.println("Andando avanti ho incocciato l'ostacolo");
-          moveForward(0,0);
-        }
-      }
-      moveForward(0, 0);
+void analizzaComando(char* comandi){
+    /*
+    I possibili comandi per il robot sono:
+    - comando == 0 --> init
+    - comando == 1 --> movimento
+    - comando == 2 --> avvicinamento
+    */
+    StaticJsonBuffer<128> jsonStringBuffer;
+    JsonObject& jsonString = jsonStringBuffer.parseObject(comandi);
+    if(!jsonString.success()) {
+        Serial.println("parseObject() failed");
+        return;
     }
-    if(indietro == 1){      
-      moveBack(ruota_sx, ruota_dx);
-      t0 = millis();
-      while (millis() - t0 < 200){
-        IRBackVal = digitalRead(BACK_IR_PIN);
-        if(IRBackVal == 0){
-          moveForward(0,0);
-        }
-      }
-      moveForward(0, 0);
-    } 
-  }
+    int comando = jsonString["comando"];
+    int velocitaRuotaSx = jsonString["ruota_sx"];
+    int velocitaRuotaDx = jsonString["ruota_dx"];
+    
+    if(comando == 0){
+        Serial.println("Devo ruotare");
+        float angolo_target = jsonString["angolo_target"];
+        int verso_rotazione = jsonString["verso_rotazione"];
+        rotateRobot(verso_rotazione, angolo_target);
+    }
+
+    if(comando == 1){
+        //Il robot si puo' muovere liberamente, deve solamente evitare gli ostacoli in modo reattivo
+        Serial.println("Mi posso muovere liberamente");
+        prendiDecisione(velocitaRuotaSx, velocitaRuotaDx);
+    }
+
+    if(comando == 2){
+      Serial.println("Sono in modalita avvicinamento");
+      float angolo_target = jsonString["angolo_target"];
+      int verso_rotazione = jsonString["verso_rotazione"];
+      rotateRobot(verso_rotazione, angolo_target);
+      avvicinatiEPrendiOggetto(velocitaRuotaSx, velocitaRuotaDx);
+    }
+
+    if(comando == 3) {
+      Serial.println("Sono in modalita fermo");
+      fermati();
+    }
 
 }
-
-
 
 /***************************************************************************/
 /*
 Funzioni per la gestione delle ruote
 */
-void rotateRobot(int direzione, float angolo_finale){
+void rotateRobot(int verso_rotazione, float angolo_finale){
     /*
-    direzione == 1 --> ruoto verso dx
-    direzione == 0 --> ruoto verso sx
+    verso_rotazione == 1 --> ruoto verso dx
+    verso_rotazione == 0 --> ruoto verso sx
     */
-    if(direzione==-1){
+    int velocitaRuotaSx = 140;
+    int velocitaRuotaDx = 140;
+    if(verso_rotazione==-1){
       return;
     }
     float angolo_attuale = getDegreeFromCompass();
-    if(direzione == 1){
+    if(verso_rotazione == 1){
         while(1){
             angolo_attuale = getDegreeFromCompass();
             if(differenzaTraAngoli(angolo_attuale, angolo_finale)>5){
                 Serial.print("Continuo a ruotare verso dx, ho una differenza di angoli pari a ");
                 Serial.println(differenzaTraAngoli(angolo_attuale, angolo_finale));
-                moveForward(160, 0); 
+                muoviAvanti(velocitaRuotaSx, 0);
                 t0 = millis();
                 while (millis() - t0 < 200){
                   getSensorsData();
-                  if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRBackVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0)
-                    moveForward(0,0);
+                  if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
+                    fermati();
+                  }
                 }
                 
             } else {
-                moveForward(0, 0);
+                fermati();
                 break;
             }
         }
     }
-    if(direzione == 0){
+    if(verso_rotazione == 0){
         while(1){
             angolo_attuale = getDegreeFromCompass();
             if(differenzaTraAngoli(angolo_attuale, angolo_finale)>5){
                 Serial.print("Continuo a ruotare verso sx, ho una differenza di angoli pari a ");
                 Serial.println(differenzaTraAngoli(angolo_attuale, angolo_finale));
-                moveForward(0, 160); 
+                muoviAvanti(0, velocitaRuotaDx);
                 t0 = millis();
                 while (millis() - t0 < 200){
                   getSensorsData();
-                  if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRBackVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0)
-                    moveForward(0,0);
+                  if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
+                      fermati();
+                  }
                 }
             } else {
-                moveForward(0, 0);
+                fermati();
                 break;
             }
         }
     }
 }
 
-
 float differenzaTraAngoli(float a, float b){
   return abs(a-b);
 }
 
-void moveBack(int speedLeftWheel, int speedRightWheel){
-  analogWrite(E1, speedRightWheel);
-  analogWrite(E2, speedLeftWheel);
-
-  digitalWrite(I1, HIGH);
-  digitalWrite(I2, LOW);
-  digitalWrite(I3, LOW);
-  digitalWrite(I4, HIGH);
-
+void fermati(){
+    analogWrite(ENA,0); // blocca il motore A 
+    analogWrite(ENB,0); // blocca il motore B 
 }
 
-void moveForward(int speedLeftWheel, int speedRightWheel){
-  analogWrite(E1, speedRightWheel);
-  analogWrite(E2, speedLeftWheel);
-
-  digitalWrite(I1, LOW);
-  digitalWrite(I2, HIGH);
-  digitalWrite(I3, HIGH);
-  digitalWrite(I4, LOW);
-
+void muoviAvanti(int velocitaRuotaSx, int velocitaRuotaDx){
+    
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    analogWrite(ENA, velocitaRuotaDx);
+    analogWrite(ENB, velocitaRuotaSx);
+    
 }
+
+void muoviIndietro(int velocitaRuotaSx, int velocitaRuotaDx){
+    
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
+    analogWrite(ENA, velocitaRuotaDx);
+    analogWrite(ENB, velocitaRuotaSx);
+}
+
+/*
+Funzioni che si occupano della parte reattiva del robot in base agli ostacoli che determina
+*/
+void prendiDecisione(int velocitaRuotaSx, int velocitaRuotaDx){
+    
+    getSensorsData();
+    
+    if(IRTopVal == 1 && IRFrontDxVal == 1 && IRFrontSxVal == 1 && IRLeftVal == 1 && IRRightVal == 1){
+        muoviAvanti(velocitaRuotaSx, velocitaRuotaDx);
+        Serial.println("Mi muovo in avanti");
+        int t = millis();
+        while (millis() - t < 200){
+            getSensorsData();
+            if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
+              Serial.println("Muovendomi in avanti ho beccato un ostacolo, mi fermo");
+              fermati(); 
+            }
+        }
+        return;
+    }
+
+    if(IRTopVal == 0 and (IRFrontDxVal == 0 || IRRightVal == 0)){
+        Serial.println("Ostacolo sul centro destra, vado indietro");
+        muoviIndietro(130, 0);
+//        int t = millis();
+//        while (millis() - t < 200){
+//          Serial.println("Faccio qualcosa");
+//        }
+        delay(200);
+        fermati();
+        return;
+    }
+
+    if(IRTopVal == 0 and (IRFrontSxVal == 0 || IRLeftVal == 0)){
+      Serial.println("Ostacolo sul centro sinistra, vado indietro");
+        muoviIndietro(0, 160);
+//        int t = millis();
+//        while (millis() - t < 200){
+//          Serial.println("Faccio qualcosa");
+//        }
+        delay(200);
+        fermati();
+        return;
+    }
+
+    if(IRFrontSxVal == 0 || IRLeftVal == 0){
+        Serial.println("Ostacolo sulla sinistra, vado indietro");
+        muoviIndietro(0, 160);
+//        int t = millis();
+//        while (millis() - t < 200){
+//          Serial.println("Faccio qualcosa");
+//        }
+        delay(200);
+        fermati();
+        return;
+    }
+
+    if(IRFrontDxVal == 0 || IRRightVal == 0){
+       Serial.println("Ostacolo sulla destra, vado indietro");
+        muoviIndietro(160, 0);
+//        int t = millis();
+//        while (millis() - t < 200){
+//          Serial.println("Faccio qualcosa");
+//        }
+        delay(200);
+        fermati();
+        return;
+    }
+
+    if(IRTopVal == 0){
+        Serial.println("Ostacolo di fronte, vado indietro");
+        muoviIndietro(160, 0);
+//        int t = millis();
+//        while (millis() - t < 200){
+//          Serial.println("Faccio qualcosa");
+//        }
+        delay(200);
+        fermati();
+        return;
+    }
+}
+
+void avvicinatiEPrendiOggetto(int velocitaRuotaSx, int velocitaRuotaDx){
+    while (IRFrontVal == 1){
+      muoviAvanti(velocitaRuotaSx, velocitaRuotaDx);
+      Serial.println("Mi avvicino all'oggetto");
+      delay(200);
+      getSensorsData();
+      if (IRFrontVal==0){
+        Serial.println("Ho l'oggetto pronto per essere preso");
+        fermati(); 
+      }
+    }
+    for(int i=10; i<=100; i+=5){
+    delay(100);
+    myservo.write(i);
+  }
+}
+
 
 /***************************************************************************/
 /*
@@ -355,6 +433,7 @@ float getDegreeFromCompass(){
     delay(100);
     return headingDegrees;
 }
+
 /***************************************************************************/
 /*
 Funzioni per la gestione della connessione al server

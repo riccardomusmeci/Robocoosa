@@ -6,7 +6,7 @@ class Robot(object):
 
     def __init__(self):
         print "Init server"
-        self.HOST = "192.168.0.101"
+        self.HOST = "192.168.0.100"
         self.PORT = 1931
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         '''
@@ -38,7 +38,7 @@ class Robot(object):
         '''
         Metodo che permette al server di mettersi in ascolto di eventuali connessioni
         '''
-        self.socket.listen(2)
+        self.socket.listen(1)
         print "Il server si e' messo in ascolto"
 
         while True:
@@ -46,7 +46,7 @@ class Robot(object):
             print "Connessione da ", indirizzo
             dati = connessione.recv(256)
             dati = eval(dati)
-            self.brain.analyzeData(dati)
+            self.brain.takeDecision(dati)
             connessione.sendall(str(self.brain.reply))
 
         connessione.close()
