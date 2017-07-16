@@ -30,8 +30,8 @@ Costanti per la connessione con il server
 //#define SSID        "Telecom-56943924"
 //#define PASSWORD    "lVGtZMVqI4XUQp5AWBcEHkQ7"
 
-#define SSID        "VodafoneMobileWiFi-E3D656"
-#define PASSWORD    "2926693643"
+ #define SSID        "VodafoneMobileWiFi-E3D656"
+ #define PASSWORD    "2926693643"
 
 /*
 Parametri del server
@@ -47,7 +47,7 @@ ESP8266 wifi(Serial1, 115200);
 HMC5883L compass;
 
 // timer
-uint8_t t0 = 0;
+unsigned long t0 = 0;
 
 // infrarossi
 int IRLeftVal;
@@ -62,7 +62,7 @@ float compass_value;
 
 // Variabile usata per i pacchetti JSON che il robot manda al server
 StaticJsonBuffer<256> jsonBuffer;
-String datiSensoriali = "{\"IR_dx\": -1, \"IR_sx\": -1, \"IR_cdx\": -1, \"IR_c\": -1, \"IR_csx\": -1, \"IR_t\": -1, \"buss\": -1}";
+String datiSensoriali = "{\"ID\": \"Arduino\", \"IR_dx\": -1, \"IR_sx\": -1, \"IR_cdx\": -1, \"IR_c\": -1, \"IR_csx\": -1, \"IR_t\": -1, \"buss\": -1, \"vengoDa\": 1}";
 JsonObject& root = jsonBuffer.parseObject(datiSensoriali);
 
 void setup(){
@@ -83,7 +83,7 @@ void setup(){
   pinMode(IN4, OUTPUT);
 
   Serial.begin(115200);
-
+  
   wifiSetup();
   compassSetup();
 
@@ -99,6 +99,7 @@ void loop(){
   char* comandoDaServer = receivingDataTCP();
   analizzaComando(comandoDaServer);
   releaseTCPConnection();
+  delay(2000);
 }
 
 /***************************************************************************/
@@ -131,7 +132,7 @@ void getSensorsData(){
   root["IR_cdx"] = IRFrontDxVal;
   root["IR_csx"] = IRFrontSxVal;
   root["buss"] = compass_value;
-  root.printTo(Serial);
+  //root.printTo(Serial);
   Serial.print("\n");
 }
 
@@ -141,16 +142,16 @@ void analizzaComando(char* comandi){
     - comando == 0 --> init
     - comando == 1 --> movimento
     - comando == 2 --> avvicinamento
+    - comando == 3 --> fermati (per scopi di testing)
     */
     StaticJsonBuffer<128> jsonStringBuffer;
     JsonObject& jsonString = jsonStringBuffer.parseObject(comandi);
+
     if(!jsonString.success()) {
         Serial.println("parseObject() failed");
         return;
     }
     int comando = jsonString["comando"];
-    int velocitaRuotaSx = jsonString["ruota_sx"];
-    int velocitaRuotaDx = jsonString["ruota_dx"];
     
     if(comando == 0){
         Serial.println("Devo ruotare");
@@ -159,6 +160,8 @@ void analizzaComando(char* comandi){
         rotateRobot(verso_rotazione, angolo_target);
     }
 
+    int velocitaRuotaSx = jsonString["ruota_sx"];
+    int velocitaRuotaDx = jsonString["ruota_dx"];
     if(comando == 1){
         //Il robot si puo' muovere liberamente, deve solamente evitare gli ostacoli in modo reattivo
         Serial.println("Mi posso muovere liberamente");
@@ -170,7 +173,10 @@ void analizzaComando(char* comandi){
       float angolo_target = jsonString["angolo_target"];
       int verso_rotazione = jsonString["verso_rotazione"];
       rotateRobot(verso_rotazione, angolo_target);
+      Serial.println("Ho finito di ruotare verso l'area/oggetto, adesso mi ci avvicino");
       avvicinatiEPrendiOggetto(velocitaRuotaSx, velocitaRuotaDx);
+      Serial.println("Comunico al server che ho finito la modalita' avvicinamento");
+      root["vengoDa"] = -1;
     }
 
     if(comando == 3) {
@@ -206,10 +212,11 @@ void rotateRobot(int verso_rotazione, float angolo_finale){
                 while (millis() - t0 < 200){
                   getSensorsData();
                   if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
+                    Serial.println("Ho determinato un ostacolo mentre ruoto verso dx, lo segnalo al server");
+                    root["vengoDa"] = 0;
                     fermati();
                   }
-                }
-                
+                }   
             } else {
                 fermati();
                 break;
@@ -227,7 +234,9 @@ void rotateRobot(int verso_rotazione, float angolo_finale){
                 while (millis() - t0 < 200){
                   getSensorsData();
                   if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
-                      fermati();
+                    Serial.println("Ho determinato un ostacolo mentre ruoto verso sx, lo segnalo al server");
+                    root["vengoDa"] = 0;
+                    fermati();
                   }
                 }
             } else {
@@ -277,13 +286,15 @@ void prendiDecisione(int velocitaRuotaSx, int velocitaRuotaDx){
     
     if(IRTopVal == 1 && IRFrontDxVal == 1 && IRFrontSxVal == 1 && IRLeftVal == 1 && IRRightVal == 1){
         muoviAvanti(velocitaRuotaSx, velocitaRuotaDx);
+        root["vengoDa"] = 1;
         Serial.println("Mi muovo in avanti");
-        int t = millis();
-        while (millis() - t < 200){
+        t0 = millis();
+        while (millis() - t0 < 200){
             getSensorsData();
             if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
-              Serial.println("Muovendomi in avanti ho beccato un ostacolo, mi fermo");
+              Serial.println("Muovendomi in avanti ho beccato un ostacolo, mi fermo e lo segnalo al server");
               fermati(); 
+              root["vengoDa"] = 0;
             }
         }
         return;
@@ -291,66 +302,72 @@ void prendiDecisione(int velocitaRuotaSx, int velocitaRuotaDx){
 
     if(IRTopVal == 0 and (IRFrontDxVal == 0 || IRRightVal == 0)){
         Serial.println("Ostacolo sul centro destra, vado indietro");
-        muoviIndietro(130, 0);
-//        int t = millis();
-//        while (millis() - t < 200){
-//          Serial.println("Faccio qualcosa");
-//        }
-        delay(200);
+        muoviIndietro(180, 0);
+        t0 = millis();
+        while (millis() - t0 < 200){
+          Serial.println("Faccio qualcosa");
+        }
+        //delay(200);
+        root["vengoDa"] = 0;
         fermati();
         return;
     }
 
     if(IRTopVal == 0 and (IRFrontSxVal == 0 || IRLeftVal == 0)){
-      Serial.println("Ostacolo sul centro sinistra, vado indietro");
-        muoviIndietro(0, 160);
-//        int t = millis();
-//        while (millis() - t < 200){
-//          Serial.println("Faccio qualcosa");
-//        }
-        delay(200);
+        Serial.println("Ostacolo sul centro sinistra, vado indietro");
+        muoviIndietro(0, 180);
+        t0 = millis();
+        while (millis() - t0 < 200){
+          Serial.println("Faccio qualcosa");
+        }
+        //delay(200);
+        root["vengoDa"] = 0;
         fermati();
         return;
     }
 
     if(IRFrontSxVal == 0 || IRLeftVal == 0){
         Serial.println("Ostacolo sulla sinistra, vado indietro");
-        muoviIndietro(0, 160);
-//        int t = millis();
-//        while (millis() - t < 200){
-//          Serial.println("Faccio qualcosa");
-//        }
-        delay(200);
+        muoviIndietro(0, 180);
+        t0 = millis();
+        while (millis() - t0 < 200){
+          Serial.println("Faccio qualcosa");
+        }
+        //delay(200);
+        root["vengoDa"] = 0;
         fermati();
         return;
     }
 
     if(IRFrontDxVal == 0 || IRRightVal == 0){
-       Serial.println("Ostacolo sulla destra, vado indietro");
-        muoviIndietro(160, 0);
-//        int t = millis();
-//        while (millis() - t < 200){
-//          Serial.println("Faccio qualcosa");
-//        }
-        delay(200);
+        Serial.println("Ostacolo sulla destra, vado indietro");
+        muoviIndietro(180, 0);
+        t0 = millis();
+        while (millis() - t0 < 200){
+          Serial.println("Faccio qualcosa");
+        }
+        //delay(200);
+        root["vengoDa"] = 0;
         fermati();
         return;
     }
 
     if(IRTopVal == 0){
         Serial.println("Ostacolo di fronte, vado indietro");
-        muoviIndietro(160, 0);
-//        int t = millis();
-//        while (millis() - t < 200){
-//          Serial.println("Faccio qualcosa");
-//        }
-        delay(200);
+        muoviIndietro(180, 0);
+        t0 = millis();
+        while (millis() - t0 < 200){
+          Serial.println("Faccio qualcosa");
+        }
+        //delay(200);
+        root["vengoDa"] = 0;
         fermati();
         return;
     }
 }
 
 void avvicinatiEPrendiOggetto(int velocitaRuotaSx, int velocitaRuotaDx){
+    Serial.println("Sono in avvicinamento");
     while (IRFrontVal == 1){
       muoviAvanti(velocitaRuotaSx, velocitaRuotaDx);
       Serial.println("Mi avvicino all'oggetto");

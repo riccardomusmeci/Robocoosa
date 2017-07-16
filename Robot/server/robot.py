@@ -47,6 +47,7 @@ class Robot(object):
             dati = connessione.recv(256)
             dati = eval(dati)
             self.brain.takeDecision(dati)
+            
             connessione.sendall(str(self.brain.reply))
 
         connessione.close()

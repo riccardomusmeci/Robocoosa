@@ -1,13 +1,5 @@
 import numpy as np
 
-DA_INIZIO_AD_OGGETTI = 100
-DA_OGGETTI_AD_AREA_ROSSA = 300
-DA_AREA_ROSSA_AD_OGGETTI = 0 
-DA_OGGETTI_AD_AREA_BLU = 0
-DA_AREA_BLU_AD_OGGETTI = 0
-DA_OGGETTI_AD_AREA_GIALLA = 0
-DA_AREA_GIALLA_AD_OGGETTI = 0
-
 class RobotBrain(object):
     '''
     E' la classe che si occupa della parte decisionale del robot
@@ -20,38 +12,27 @@ class RobotBrain(object):
     '''
     def __init__(self):
         self.modalita = "init"
-        self.datiSensoriali = {}
-        self.datiCamera = {}
-        self.constants = [
-            DA_INIZIO_AD_OGGETTI, DA_OGGETTI_AD_AREA_ROSSA, DA_AREA_ROSSA_AD_OGGETTI, 
-            DA_OGGETTI_AD_AREA_BLU, DA_AREA_BLU_AD_OGGETTI,
-            DA_OGGETTI_AD_AREA_GIALLA, DA_AREA_GIALLA_AD_OGGETTI,
-        ]
+        self.datiSensoriali = {
+            "ID": None
+            "IR_dx": -1,
+            "IR_sx": -1,
+            "IR_cdx": -1,
+            "IR_c": -1,
+            "IR_csx": -1,
+            "IR_t": -1,
+            "buss": -1,
+        }
+        self.ANGOLOTARGET = 100
         self.reply = {}
         self.numeroDiAvantiPrimaDiRiorentarsi = 0
-        
-        self.doveInMacchinaAStatiFiniti = 0
-        self.ANGOLOTARGET = self.constants[self.doveInMacchinaAStatiFiniti]
 
     def takeDecision(self, dati):
+        self.datiSensoriali = dati
+        print self.datiSensoriali
 
-        if dati["ID"] == "Camera":
-            self.datiCamera = dati
-            print "\n"
-            print "ARRIVATI DATI DA CAMERA, IDENTIFICATO L'AREA/OGGETTO"
-            print self.datiCamera
-            print "Imposto la modalita del robot in avvicinamento"
-            print "\n"
-            self.modalita = "avvicinamento"
-        
-        if dati["ID"] == "Arduino":
-            print "Il robot e' in modalita: ", self.modalita
-            self.datiSensoriali = dati
-            #print self.datiSensoriali
-        
-        if self.datiSensoriali["vengoDa"] == -1:
-            print "Il robot e' in modalita' avvicinamento, devo lasciarlo lavorare"
-            return
+        if self.datiSensoriali["ID"] == "Camera"
+            pass
+       
         self.takeDecisionForArduino()
     
     
@@ -79,8 +60,8 @@ class RobotBrain(object):
             return
 
         if self.modalita == "avvicinamento":
-            (angolo_target, verso) = self.calcolaAngoloDaRaggiungereDataUnaDifferenzaFraAngoli(self.datiCamera["differenza_angolo"])
-            
+            angolo_target = 270
+            verso = 1
             self.reply = {
                 "comando": 2,
                 "angolo_target": angolo_target,
@@ -88,13 +69,7 @@ class RobotBrain(object):
                 "ruota_sx": 120,
                 "ruota_dx": 120
             }
-            if self.datiSensoriali["vengoDa"] == -1:
-                self.doveInMacchinaAStatiFiniti += 1
-                self.ANGOLOTARGET = self.constants[self.doveInMacchinaAStatiFiniti]
-                self.modalita = "init"
-                print "Pronto per raggiungere un'altra area, devo avere un angolo di ", self.ANGOLOTARGET
-            else:
-                print "Il robot si sta avvicinando all'oggetto/area, non lo disturbo"
+            self.modalita = "fermo"
             return
         
         if self.modalita == "fermo":
@@ -140,18 +115,4 @@ class RobotBrain(object):
             print "Il robot deve girare verso dx per mantenere l'orientamento"
             return 0
 
-    def calcolaAngoloDaRaggiungereDataUnaDifferenzaFraAngoli(self, differenza_angolo):
-        verso = -1
-        if differenza_angolo < 0:
-            verso = 0
-        else:
-            verso = 1
-        angolo_target = self.datiSensoriali["buss"] + differenza_angolo
-        
-        if angolo_target > 360:
-            angolo_target -= 360
-        if angolo_target < 0:
-            angolo_target += 360
-        
-        return (angolo_target, verso)
-        
+    
