@@ -22,8 +22,8 @@ class RobotBrain(object):
             "IR_csx": -1,
             "IR_t": -1,
             "buss": -1,
-            "vengoDa": -1
         }
+        
         self.datiCamera = {
             "ID": "Camera",
             "differenza_angolo": None,
@@ -31,39 +31,41 @@ class RobotBrain(object):
             "target": None #puo' essere area/oggetto
         }
         self.constants = [c.DA_INIZIO_AD_OGGETTI, c.DA_OGGETTI_AD_AREA_ROSSA, c.DA_AREA_ROSSA_AD_OGGETTI]
-        self.angoloTarget = 100
+        self.angoloTarget = c.DA_INIZIO_AD_OGGETTI
+        self.indiceFSM = 0
         self.reply = {}
         self.numeroDiAvantiPrimaDiRiorentarsi = 0
 
     def takeDecision(self, dati):
-        
+
         if dati["ID"] == "Arduino":
             self.datiSensoriali = dati
-            #print self.datiSensoriali
+            print self.datiSensoriali
         
         if dati["ID"] == "Camera":
             self.datiCamera = dati
             print self.datiCamera
             if self.datiCamera["target"] == "oggetto":
                 self.modalita = "avvicinamento"
-                print "Arrivati dati dalla camera. Ho individuato l'oggetto."
             if self.datiCamera["target"] == "area":
                 self.modalita = "avvicinamento con oggetto"
-                print "Arrivati dati dalla camera. Ho individuato l'area."
+
 
         self.takeDecisionForArduino()
+    
     
     def takeDecisionForArduino(self):
 
         print "\nStato del robot"
         print "Modalita': ", self.modalita
-        print "Vengo da", self.datiSensoriali["vengoDa"]
+        print "Vengo da", c.vengoDaStringa[self.datiSensoriali["vengoDa"]]
         print "Bussola: ", self.datiSensoriali["buss"]
-        print "Angoloo target: ", self.angoloTarget
+        print "Differenza con angolo target: ", int(self.datiSensoriali["buss"] - self.angoloTarget)
         print "Stato del mondo: \n", self.datiSensoriali
         print "\n"
 
         if self.modalita == "init":
+            self.angoloTarget = self.constants[self.indiceFSM]
             self.reply = {
                 "comando": 0, 
                 "angolo_target": self.angoloTarget,
@@ -78,39 +80,63 @@ class RobotBrain(object):
         if self.modalita == "movimento":
             self.reply = {
                 "comando": 1,
-                "ruota_sx": 230,
-                "ruota_dx": 220
+                "ruota_sx": 200,
+                "ruota_dx": 210
             }
             return
 
         if self.modalita == "avvicinamento":
-            
-            if self.datiCamera["verso_rotazione"] == 1:
-                self.datiCamera["differenza_angolo"] *= -1
-            
+            if self.datiSensoriali["vengoDa"] == 2:
+                return
             self.angoloTarget = self.determinaAngolo(self.datiSensoriali['buss'] + self.datiCamera["differenza_angolo"])
             self.reply = {
                 "comando": 2,
                 "angolo_target": self.angoloTarget,
                 "verso_rotazione": self.datiCamera["verso_rotazione"],
-                "ruota_sx": 170,
-                "ruota_dx": 170
+                "ruota_sx": 120,
+                "ruota_dx": 120
             }
             return
-
+        # vengo da prendere l'oggetto
         if self.datiSensoriali["vengoDa"] == 3:
-            print "Il robot ha catturato l'oggetto"
-            self.modalita = "fermo"
-            # self.indiceFSM += 1
-            # self.angoloTarget = self.constants[self.indiceFSM]
-            # self.modalita = "init con oggetto"
-
-        if self.modalita == "fermo":
-            print "Fermo"
+            self.indiceFSM += 1
+            self.angoloTarget = self.constants[self.indiceFSM]
+            self.modalita = "init con oggetto"
+        
+        if self.modalita == "init con oggetto":
             self.reply = {
                 "comando": 3,
+                "angolo_target": self.angoloTarget
+                "verso_rotazione": self.determinaOrientamento()
+            }
+            self.modalita = "movimento con oggetto"
+            return
+
+        if self.modalita == "movimento con oggetto":
+            self.reply = {
+                "comando": 4,
+                "ruota_sx": 200,
+                "ruota_dx": 210
             }
             return
+        if self.modalita == "avvicinamento con oggetto":
+            if self.datiSensoriali["vengoDa"] == 2:
+                return
+            self.angoloTarget = self.determinaAngolo(self.datiSensoriali['buss'] + self.datiCamera["differenza_angolo"])
+            self.reply = {
+                "comando": 5,
+                "angolo_target": self.angoloTarget,
+                "verso_rotazione": self.datiCamera["verso_rotazione"],
+                "ruota_sx": 120,
+                "ruota_dx": 120
+            }
+        # vengo da posare l'oggetto nell'area
+        if self.datiSensoriali["vengoDa"] == 4:
+            self.indiceFSM += 1
+            self.angoloTarget = self.constants[self.indiceFSM]
+            self.modalita = "init"
+
+
 
     def miDevoOrientare(self):
         if self.numeroDiAvantiPrimaDiRiorentarsi == 7:
@@ -144,19 +170,16 @@ class RobotBrain(object):
             print "Il robot non deve ruotare, e' orientato abbastanza bene"
             return -1
         if differenza_angoli in np.arange(-10, -self.angoloTarget, -1) or differenza_angoli in np.arange(180, 360-self.angoloTarget, 1):
-            print "Il robot deve girare verso sx per mantenere l'orientamento"
+            print "Il robot deve girare da sx verso dx per mantenere l'orientamento"
             return 1
         else:
             if differenza_angoli in np.arange(10, 180, 1):
-                print "Il robot deve girare verso dx per mantenere l'orientamento"
+                print "Il robot deve girare da dx verso sx per mantenere l'orientamento"
                 return 0
         return -1
 
     def determinaAngolo(self, angolo):
         if angolo > 359:
-            print "Angolo e' maggiore di 360, lo riporto in mod360"
             return angolo - 359
         if angolo < 0:
-            print "Angolo e' minore di 0, lo riporto in mod360"
             return angolo + 359
-        return angolo

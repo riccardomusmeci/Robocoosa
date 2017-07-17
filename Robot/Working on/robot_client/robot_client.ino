@@ -36,7 +36,7 @@ Costanti per la connessione con il server
 /*
 Parametri del server
 */
-#define SERVER_NAME "192.168.0.102"
+#define SERVER_NAME "192.168.0.100"
 #define SERVER_PORT (1931)
 
 /*
@@ -170,21 +170,29 @@ void analizzaComando(char* comandi){
 
     if(comando == 2){
       root["vengoDa"] = 2;
-      Serial.println("Sono in modalita avvicinamento");
       float angolo_target = jsonString["angolo_target"];
       int verso_rotazione = jsonString["verso_rotazione"];
       rotateRobot(verso_rotazione, angolo_target);
-      Serial.println("Ho finito di ruotare verso l'area/oggetto, adesso mi ci avvicino");
       avvicinatiEPrendiOggetto(velocitaRuotaSx, velocitaRuotaDx);
-      Serial.println("Comunico al server che ho finito la modalita' avvicinamento");
       fermati();
       root["vengoDa"] = 3;
-      root.printTo(Serial);
     }
 
     if(comando == 3) {
-      Serial.println("Sono in modalita fermo");
-      fermati();
+      float angolo_target = jsonString["angolo_target"];
+      int verso_rotazione = jsonString["verso_rotazione"];
+      rotateRobot(verso_rotazione, angolo_target);
+      return; 
+    }
+
+    if(comando == 4){
+      Serial.println("Mi muovo liberamente con oggetto");
+      prendiDecisioneConOggetto(velocitaRuotaSx, velocitaRuotaDx);
+      return;
+    }
+    // avvicnamento con oggetto
+    if(comando == 5){
+      
     }
 
 }
@@ -198,8 +206,8 @@ void rotateRobot(int verso_rotazione, float angolo_finale){
     verso_rotazione == 1 --> ruoto verso dx
     verso_rotazione == 0 --> ruoto verso sx
     */
-    int velocitaRuotaSx = 170;
-    int velocitaRuotaDx = 170;
+    int velocitaRuotaSx = 150;
+    int velocitaRuotaDx = 150;
     if(verso_rotazione==-1){
       Serial.println("Il verso di rotazione e' -1");
       return;
@@ -387,6 +395,9 @@ void avvicinatiEPrendiOggetto(int velocitaRuotaSx, int velocitaRuotaDx){
   }
 }
 
+void prendiDecisioneConOggetto(int velocitaRuotaSx, int velocitaRuotaDx){
+
+}
 
 /***************************************************************************/
 /*

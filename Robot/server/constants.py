@@ -1,0 +1,9 @@
+DA_INIZIO_AD_OGGETTI = 100
+DA_OGGETTI_AD_AREA_ROSSA = 300
+DA_AREA_ROSSA_AD_OGGETTI = 0 
+DA_OGGETTI_AD_AREA_BLU = 0
+DA_AREA_BLU_AD_OGGETTI = 0
+DA_OGGETTI_AD_AREA_GIALLA = 0
+DA_AREA_GIALLA_AD_OGGETTI = 0
+
+vengoDaString = ["ostacolo", "strada libera", "avvicinamento", "fine avvicinamento"]

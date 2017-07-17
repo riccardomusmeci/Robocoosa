@@ -1,4 +1,5 @@
 import numpy as np
+import constants as c
 
 class RobotBrain(object):
     '''
@@ -13,7 +14,7 @@ class RobotBrain(object):
     def __init__(self):
         self.modalita = "init"
         self.datiSensoriali = {
-            "ID": None
+            "ID": None,
             "IR_dx": -1,
             "IR_sx": -1,
             "IR_cdx": -1,
@@ -22,27 +23,46 @@ class RobotBrain(object):
             "IR_t": -1,
             "buss": -1,
         }
-        self.ANGOLOTARGET = 100
+        
+        self.datiCamera = {
+            "ID": "Camera",
+            "differenza_angolo": None,
+            "verso_rotazione": -1
+        }
+
+        self.angoloTarget = c.DA_INIZIO_AD_OGGETTI
         self.reply = {}
         self.numeroDiAvantiPrimaDiRiorentarsi = 0
 
     def takeDecision(self, dati):
-        self.datiSensoriali = dati
-        print self.datiSensoriali
 
-        if self.datiSensoriali["ID"] == "Camera"
-            pass
-       
+        if dati["ID"] == "Arduino":
+            self.datiSensoriali = dati
+            print self.datiSensoriali
+        
+        if dati["ID"] == "Camera":
+            self.datiCamera = dati
+            print self.datiCamera
+            self.modalita = "avvicinamento"
+
+
         self.takeDecisionForArduino()
     
     
     def takeDecisionForArduino(self):
 
+        print "\nStato del robot"
+        print "Modalita': ", self.modalita
+        print "Vengo da", c.vengoDaStringa[self.datiSensoriali["vengoDa"]]
+        print "Bussola: ", self.datiSensoriali["buss"]
+        print "Differenza con angolo target: ", int(self.datiSensoriali["buss"] - self.angoloTarget)
+        print "Stato del mondo: \n", self.datiSensoriali
+        print "\n"
+
         if self.modalita == "init":
-            print "Sono in modalita' init"
             self.reply = {
                 "comando": 0, 
-                "angolo_target": self.ANGOLOTARGET,
+                "angolo_target": self.angoloTarget,
                 "verso_rotazione": self.determinaOrientamento()
             }
             self.modalita = "movimento"
@@ -54,37 +74,41 @@ class RobotBrain(object):
         if self.modalita == "movimento":
             self.reply = {
                 "comando": 1,
-                "ruota_sx": 160,
-                "ruota_dx": 160
+                "ruota_sx": 200,
+                "ruota_dx": 210
             }
             return
 
         if self.modalita == "avvicinamento":
-            angolo_target = 270
-            verso = 1
+            self.angoloTarget = self.determinaAngolo(self.datiSensoriali['buss'] + self.datiCamera["differenza_angolo"])
             self.reply = {
                 "comando": 2,
-                "angolo_target": angolo_target,
-                "verso_rotazione": verso,
+                "angolo_target": self.angoloTarget,
+                "verso_rotazione": self.datiCamera["verso_rotazione"],
                 "ruota_sx": 120,
                 "ruota_dx": 120
             }
-            self.modalita = "fermo"
             return
         
-        if self.modalita == "fermo":
+        if self.datiSensoriali["vengoDa"] == 3:
+            self.modalita = "movimento con oggetto"
+        
+        if self.modalita == "movimento con oggetto":
             self.reply = {
                 "comando": 3,
+                "angolo_target": self.angoloTarget,
+                "ruota_sx": 200,
+                "ruota_dx": 210
             }
             return
 
     def miDevoOrientare(self):
-        if self.numeroDiAvantiPrimaDiRiorentarsi == 15:
+        if self.numeroDiAvantiPrimaDiRiorentarsi == 7:
             #devo trovare un algoritmo che mi permette di riorientarmi in base alla bussola e all'angolo target
             verso = self.determinaOrientamento()
             self.reply = {
                 "comando": 0,
-                "angolo_target": self.ANGOLOTARGET,
+                "angolo_target": self.angoloTarget,
                 "verso_rotazione": verso,
             }
             self.numeroDiAvantiPrimaDiRiorentarsi = 0
@@ -103,16 +127,23 @@ class RobotBrain(object):
         '''
         Determino il verso di rotazione da fare in base all'angolo target da raggiungere
         '''
+        
         angolo_attuale = self.datiSensoriali["buss"]
-        differenza_angoli = int(angolo_attuale - self.ANGOLOTARGET)
+        differenza_angoli = int(angolo_attuale - self.angoloTarget)
         if differenza_angoli in np.arange(-10, 10, 1):
             print "Il robot non deve ruotare, e' orientato abbastanza bene"
             return -1
-        if differenza_angoli in np.arange(-1, -self.ANGOLOTARGET, 1) or differenza_angoli in np.arange(180, 360-self.ANGOLOTARGET, 1):
-            print "Il robot deve girare verso sx per mantenere l'orientamento"
+        if differenza_angoli in np.arange(-10, -self.angoloTarget, -1) or differenza_angoli in np.arange(180, 360-self.angoloTarget, 1):
+            print "Il robot deve girare da sx verso dx per mantenere l'orientamento"
             return 1
         else:
-            print "Il robot deve girare verso dx per mantenere l'orientamento"
-            return 0
+            if differenza_angoli in np.arange(10, 180, 1):
+                print "Il robot deve girare da dx verso sx per mantenere l'orientamento"
+                return 0
+        return -1
 
-    
+    def determinaAngolo(self, angolo):
+        if angolo > 359:
+            return angolo - 359
+        if angolo < 0:
+            return angolo + 359
