@@ -377,7 +377,7 @@ void avvicinatiEPrendiOggetto(int velocitaRuotaSx, int velocitaRuotaDx){
           delay(100);
           myservo.write(i);
         }
-      root["vengoDa"] = 3;
+     // root["vengoDa"] = 3;
       }
     }
     fermati();
