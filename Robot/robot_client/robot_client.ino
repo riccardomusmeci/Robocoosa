@@ -176,10 +176,7 @@ void analizzaComando(char* comandi){
       rotateRobot(verso_rotazione, angolo_target);
       Serial.println("Ho finito di ruotare verso l'area/oggetto, adesso mi ci avvicino");
       avvicinatiEPrendiOggetto(velocitaRuotaSx, velocitaRuotaDx);
-      Serial.println("Comunico al server che ho finito la modalita' avvicinamento");
-      fermati();
-      root["vengoDa"] = 3;
-      root.printTo(Serial);
+      
     }
 
     if(comando == 3) {
@@ -291,7 +288,7 @@ void prendiDecisione(int velocitaRuotaSx, int velocitaRuotaDx){
         root["vengoDa"] = 1;
         Serial.println("Mi muovo in avanti");
         t0 = millis();
-        while (millis() - t0 < 200){
+        while (millis() - t0 < 300){
             getSensorsData();
             if (IRLeftVal == 0 || IRFrontVal == 0 || IRRightVal == 0 || IRTopVal == 0 || IRFrontDxVal == 0 || IRFrontSxVal == 0){
               Serial.println("Muovendomi in avanti ho beccato un ostacolo, mi fermo e lo segnalo al server");
@@ -370,21 +367,20 @@ void prendiDecisione(int velocitaRuotaSx, int velocitaRuotaDx){
 }
 
 void avvicinatiEPrendiOggetto(int velocitaRuotaSx, int velocitaRuotaDx){
-    Serial.println("Sono in avvicinamento");
-    while (IRFrontVal == 1){
-      muoviAvanti(velocitaRuotaSx, velocitaRuotaDx);
-      Serial.println("Mi avvicino all'oggetto");
-      delay(200);
-      getSensorsData();
-      if (IRFrontVal==0){
-        Serial.println("Ho l'oggetto pronto per essere preso");
-        fermati(); 
+    
+    muoviAvanti(velocitaRuotaSx, velocitaRuotaDx);
+    t0 = millis();
+    while (millis() - t0 < 300){        
+      if(IRFrontVal == 0){
+        fermati();
+        for(int i=10; i<=100; i+=5){
+          delay(100);
+          myservo.write(i);
+        }
+      root["vengoDa"] = 3;
       }
     }
-    for(int i=10; i<=100; i+=5){
-    delay(100);
-    myservo.write(i);
-  }
+    fermati();
 }
 
 

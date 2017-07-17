@@ -1,6 +1,6 @@
 import numpy as np
 import constants as c
-
+import time
 class RobotBrain(object):
     '''
     E' la classe che si occupa della parte decisionale del robot
@@ -12,7 +12,7 @@ class RobotBrain(object):
         DANGERDISTANCE (int): e' il limite di distanza oltre il quale bisogna virare
     '''
     def __init__(self):
-        self.modalita = "init"
+        self.modalita = "fermo"
         self.datiSensoriali = {
             "ID": None,
             "IR_dx": -1,
@@ -72,7 +72,7 @@ class RobotBrain(object):
             self.modalita = "movimento"
             return
 
-        if self.miDevoOrientare() is True:
+        if self.miDevoOrientare() is True and self.modalita != "avvicinamento":
             return
 
         if self.modalita == "movimento":
@@ -83,28 +83,36 @@ class RobotBrain(object):
             }
             return
 
-        if self.modalita == "avvicinamento":
-            
-            if self.datiCamera["verso_rotazione"] == 1:
-                self.datiCamera["differenza_angolo"] *= -1
-            
-            self.angoloTarget = self.determinaAngolo(self.datiSensoriali['buss'] + self.datiCamera["differenza_angolo"])
-            self.reply = {
-                "comando": 2,
-                "angolo_target": self.angoloTarget,
-                "verso_rotazione": self.datiCamera["verso_rotazione"],
-                "ruota_sx": 170,
-                "ruota_dx": 170
-            }
-            return
-
         if self.datiSensoriali["vengoDa"] == 3:
-            print "Il robot ha catturato l'oggetto"
+            print "Sono fermo"
             self.modalita = "fermo"
             # self.indiceFSM += 1
             # self.angoloTarget = self.constants[self.indiceFSM]
             # self.modalita = "init con oggetto"
+            return
 
+        if self.modalita == "avvicinamento":
+            t = time.time()
+            while time.time() - t < 2:
+                print "Aspetto..."
+            print "\n"
+            print "Sono dentro la fase di avvicinamento"
+            if self.datiCamera["verso_rotazione"] == 1:
+                self.datiCamera["differenza_angolo"] *= -1
+            print "La differenza angolo che mi manda la camera e': ", self.datiCamera["differenza_angolo"]
+            self.angoloTarget = self.determinaAngolo(self.datiSensoriali['buss'] + self.datiCamera["differenza_angolo"])
+            print "Il robot deve raggiungere l'angolo: ", self.angoloTarget
+            print "\n"
+            self.reply = {
+                "comando": 2,
+                "angolo_target": self.angoloTarget,
+                "verso_rotazione": self.datiCamera["verso_rotazione"],
+                "ruota_sx": 230,
+                "ruota_dx": 220
+            }
+            return
+
+        
         if self.modalita == "fermo":
             print "Fermo"
             self.reply = {
