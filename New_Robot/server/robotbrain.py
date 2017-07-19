@@ -45,7 +45,7 @@ class RobotBrain(object):
                             }
     '''
     def __init__(self):
-        self.modalita = "fermo"
+        self.modalita = "init"
         self.datiSensoriali = {
             "ID": None,
             "IR_dx": -1,
@@ -61,80 +61,61 @@ class RobotBrain(object):
             "ID": "Camera",
             "differenza_angolo": None,
             "verso_rotazione": -1,
+            "presa-rilascio": -1,
             "target": None #puo' essere area/oggetto
         }
         self.constants = [c.DA_INIZIO_AD_OGGETTI, c.DA_OGGETTI_AD_AREA_ROSSA, c.DA_AREA_ROSSA_AD_OGGETTI]
         self.indiceFSM = 0
-        self.angoloTarget = self.constants[self.indiceFSM]
+        self.angoloTarget = self.constants[self.indiceFSM][0]
         '''
         La forma che contiene tutti i tipi di riposta e' la seguente, ne metto uno per tipo di risposta
         '''
         self.reply = {}
         self.numeroDiAvantiPrimaDiRiorentarsi = 0
-
-    def takeDecision(self, dati):
-        
-        if dati["ID"] == "Arduino":
-            self.datiSensoriali = dati
-            self.takeDecisionForArduino()
-
-        if dati["ID"] == "Camera":
-            self.datiCamera = dati
-            print self.datiCamera
-            self.analyzeDataFromCamera()
-            if self.datiCamera["target"] == "oggetto":
-                if self.datiCamera["presa-rilascio"] == 1:
-                    self.modalita = "presa-rilascio"
-                    print "Arrivati dati dalla camera. Posso prende l'oggetto."
-                else:
-                    self.modalita = "avvicinamento"
-                    print "Arrivati dati dalla camera. Mi avvicino all'oggetto."
-            if self.datiCamera["target"] == "area":
-                self.modalita = "avvicinamento con oggetto"
-                print "Arrivati dati dalla camera. Ho individuato l'area."
-        
-        self.infoStatoDelMondo()   
     
-    def takeDecisionNew(self, dati):
+    def takeDecision(self, dati):
+
         if dati["ID"] == "Arduino":
             self.datiSensoriali = dati
             self.FSM()
+            self.infoStatoDelMondo()
+        
         if dati["ID"] == "Camera":
             self.datiCamera = dati
             self.analyzeDataFromCamera()
-        self.infoStatoDelMondo()
+            self.reply = "ok camera"
+        
 
     def analyzeDataFromCamera(self):
         if self.modalita == "presa-rilascio":
             return
         if self.datiCamera["presa-rilascio"] == 1:
+            print "Posso prendere l'oggetto"
             self.modalita = "presa-rilascio"
         else:
+            print "Individuato l'" + self.datiCamera["target"] + ", mi metto in modalita avvicinamento"
             self.modalita = "avvicinamento"
     
     def FSM(self):
 
-        con_oggetto = 1
+        con_oggetto = 0
         if self.indiceFSM%2 == 0:
             con_oggetto = 0
         
         if self.modalita == "init":
+            print "[INIT] Angolo da raggiungere: ", self.angoloTarget
             self.reply = {
                 "comando": 0,
+                "sterzatura_preferita": self.constants[self.indiceFSM][1],
                 "con_oggetto": con_oggetto,
                 "angolo_target": self.angoloTarget,
                 "verso_rotazione": self.determinaOrientamento()
             }
             self.modalita = "movimento"
+            print "Posso impostare la modalita movimento adesso"
             return
         
-        if self.miDevoOrientare() is True:
-            self.reply = {
-                "comando": 0,
-                "con_oggetto": con_oggetto,
-                "angolo_target": self.angoloTarget,
-                "verso_rotazione": verso,
-            }
+        if self.miDevoOrientare(con_oggetto) is True:
             return
     
         if self.modalita == "movimento":
@@ -168,95 +149,51 @@ class RobotBrain(object):
             }
             self.indiceFSM += 1
             self.angoloTarget = self.constants[self.indiceFSM]
-            self.modalita == "init"
+            self.modalita = "init"
+            print "[PRESA-RILASCIO] Mi posso mettere in modalita' init e ricominciare la FSM"
             return
 
 
-
-
-    def takeDecisionForArduino(self):
-
-        if self.modalita == "init":
-            self.reply = {
-                "comando": 0, 
-                "angolo_target": self.angoloTarget,
-                "verso_rotazione": self.determinaOrientamento()
-            }
-            self.modalita = "movimento"
-            return
-
-        if self.miDevoOrientare() is True:
-            self.reply = {
-                "comando": 0,
-                "angolo_target": self.angoloTarget,
-                "verso_rotazione": self.determinaAngolo(),
-            }
-            return
-
+    def miDevoOrientare(self, con_oggetto):
+        
         if self.modalita == "movimento":
-            self.reply = {
-                "comando": 1,
-                "ruota_sx": 230,
-                "ruota_dx": 220
-            }
-            return
-
+            if self.numeroDiAvantiPrimaDiRiorentarsi == 7:
+                #devo trovare un algoritmo che mi permette di riorientarmi in base alla bussola e all'angolo target            
+                self.numeroDiAvantiPrimaDiRiorentarsi = 0
+                self.reply = {
+                    "comando": 0,
+                    "con_oggetto": con_oggetto,
+                    "angolo_target": self.angoloTarget,
+                    "verso_rotazione": self.determinaOrientamento()
+                }
+                print "[MOVIMENTO] Mi oriento di nuovo verso l'obiettivo"
+                return True
+        
+            if self.datiSensoriali["vengoDa"] == 0:
+                print "Il robot ha identificato un ostacolo, gli do' la possibilita' di fare manovra prima di riorentarsi"
+                self.numeroDiAvantiPrimaDiRiorentarsi = 0
+                return False
+            if self.datiSensoriali["vengoDa"] == 1:
+                self.numeroDiAvantiPrimaDiRiorentarsi += 1
+                print "Il robot ha la strada libera, gli faccio incrementare il contatore per arrivare ad orientarsi di nuovo, ", self.numeroDiAvantiPrimaDiRiorentarsi
+                return False
+        
         if self.modalita == "avvicinamento":
-            print "\n"
-            print "Sono dentro la fase di avvicinamento"
-            if self.datiCamera["verso_rotazione"] == 0:
-                self.datiCamera["differenza_angolo"] *= -1
-            
-            print "La differenza angolo che mi manda la camera e': ", self.datiCamera["differenza_angolo"]
-            self.angoloTarget = self.determinaAngolo(self.datiSensoriali['buss'] + self.datiCamera["differenza_angolo"])
-            self.datiCamera["differenza_angolo"] = 0
+            if self.datiSensoriali["vengoDa"] == 0:
+                print "Nella fase di avvicinamento il robot ha incontrato un ostacolo, lo faccio camminare in avanti prima di farlo orienare con l'angolo target dato inizialmente"
+                self.numeroDiAvantiPrimaDiRiorentarsi = 0
+                self.modalita = "movimento"
+                self.reply = {
+                    "comando": 1,
+                    "con_oggetto": con_oggetto,
+                    "ruota_sx": 230,
+                    "ruota_dx": 220 
+                }
+                self.angoloTarget = self.constants[self.indiceFSM]
+            print "[AVVICINAMENTO] Ancora in modalita' avvicinamento non e' stata implementata la riorientazione dopo aver incontrato un ostacolo"
+            return False
 
-            print "Il robot deve raggiungere l'angolo: ", self.angoloTarget
-            print "\n"
-            self.reply = {
-                "comando": 2,
-                "angolo_target": self.angoloTarget,
-                "verso_rotazione": self.datiCamera["verso_rotazione"],
-                "ruota_sx": 230,
-                "ruota_dx": 220
-            }
-            return
-        
-        if self.modalita == "prendi oggetto":
-            print "Il robot prende l'oggetto"
-            self.reply = {
-                "comando": 3
-            }
-            print "Ho appena preso un oggetto, posso orientarmi per una nuova area da raggiungere"
-            self.indiceFSM += 1
-            self.angoloTarget = self.constants[self.indiceFSM]
-            self.modalita == "init"
-            return
-        
-        if self.modalita == "fermo":
-            print "Il robot e' fermo"
-            self.reply = {
-                "comando": 4
-            }
-            return
 
-    def miDevoOrientare(self):
-        if self.modalita == "avvicinamento":
-            print "Sono in fase avvicinamento, ci pensa il robot stesso a riorientarsi"
-            return False
-        if self.numeroDiAvantiPrimaDiRiorentarsi == 7:
-            #devo trovare un algoritmo che mi permette di riorientarmi in base alla bussola e all'angolo target            
-            self.numeroDiAvantiPrimaDiRiorentarsi = 0
-            return True
-        
-        if self.datiSensoriali["vengoDa"] == 0:
-            print "Il robot ha identificato un ostacolo, gli do' la possibilita' di fare manovra prima di riorentarsi"
-            self.numeroDiAvantiPrimaDiRiorentarsi = 0
-            return False
-        if self.datiSensoriali["vengoDa"] == 1:
-            self.numeroDiAvantiPrimaDiRiorentarsi += 1
-            print "Il robot ha la strada libera, gli faccio incrementare il contatore per arrivare ad orientarsi di nuovo, ", self.numeroDiAvantiPrimaDiRiorentarsi
-            return False
 
     def determinaOrientamento(self):
         '''
@@ -295,8 +232,9 @@ class RobotBrain(object):
     def infoStatoDelMondo(self):
         print "\nStato del robot"
         print "Modalita': ", self.modalita
-        print "Vengo da", self.datiSensoriali["vengoDa"]
+        print "Indice FSM: ",  self.indiceFSM
+        print "Vengo da ", self.datiSensoriali["vengoDa"]
         print "Bussola: ", self.datiSensoriali["buss"]
-        print "Angoloo target: ", self.angoloTarget
+        print "Angolo target: ", self.angoloTarget
         print "Stato del mondo: \n", self.datiSensoriali
         print "\n"

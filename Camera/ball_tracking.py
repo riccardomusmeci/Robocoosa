@@ -16,7 +16,7 @@ ap.add_argument("-b", "--buffer", type=int, default=64,
 args = vars(ap.parse_args())
 
 # connessione socket
-server_address = '192.168.0.102'
+server_address = '192.168.0.100'
 server_port = 1931
 
 red = Object("red")
