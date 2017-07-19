@@ -98,7 +98,7 @@ class RobotBrain(object):
     
     def FSM(self):
 
-        con_oggetto = 0
+        con_oggetto = 0 #da modificare quando si aggiungeranno gli IR
         if self.indiceFSM%2 == 0:
             con_oggetto = 0
         
@@ -190,10 +190,8 @@ class RobotBrain(object):
                     "ruota_dx": 220 
                 }
                 self.angoloTarget = self.constants[self.indiceFSM]
-            print "[AVVICINAMENTO] Ancora in modalita' avvicinamento non e' stata implementata la riorientazione dopo aver incontrato un ostacolo"
+                return False
             return False
-
-
 
     def determinaOrientamento(self):
         '''
