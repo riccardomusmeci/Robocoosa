@@ -46,11 +46,9 @@ class Robot(object):
             print "Connessione da ", indirizzo
             dati = connessione.recv(256)
             dati = eval(dati)
-            # if dati["ID"] == "Camera":
-            #     connessione.close()
 
             self.brain.takeDecision(dati)
-            connessione.sendall(str(self.brain.reply))
+            connessione.send(str(self.brain.reply))
 
         connessione.close()
 

@@ -1,6 +1,5 @@
 import numpy as np
 import constants as c
-import time
 
 class RobotBrain(object):
     '''
@@ -13,6 +12,7 @@ class RobotBrain(object):
                         - avvicinamento;
                         - presa/rilascio oggetto;
         datiSensoriali (dict): dati sensoriali del mondo che vengono aggiornati da quello che manda il robot
+        datiCamera(dict): dati che la camera manda al server
         reply (dict): contiene la risposta del server in base alla modalita' in cui si trova il robot. 
                       La risposta del server al client sara' cosi' fatta in base alle modalita':
                       - init:
@@ -43,6 +43,11 @@ class RobotBrain(object):
                                 "comando": 3,
                                 "con_oggetto": 0 o 1
                             }
+    
+        costantiFSM (list): e' una lista contenente tuple del tipo (angolo, sterzatura), utilizzata per raggiungere le varie aree nel mondo;
+        indiceFSM (int): indice che ci permette di avanzare nella FSM definita
+        angoloTarget (float): angolo che il robot deve seguire per orientarsi verso un'area
+        numeroDiAvantiPrimaDiRiorientarsi (int): numero step in avanti (senza ostacoli) prima che il robot si orienti di nuovo;
     '''
     def __init__(self):
         self.modalita = "init"
@@ -60,34 +65,42 @@ class RobotBrain(object):
         self.datiCamera = {
             "ID": "Camera",
             "differenza_angolo": None,
+            "colore": None,
             "verso_rotazione": -1,
             "presa-rilascio": -1,
             "target": None #puo' essere area/oggetto
         }
-        self.constants = [c.DA_INIZIO_AD_OGGETTI, c.DA_OGGETTI_AD_AREA_ROSSA, c.DA_AREA_ROSSA_AD_OGGETTI]
+        self.costantiFSM = [c.DA_INIZIO_AD_OGGETTI, c.DA_OGGETTI_AD_AREA_ROSSA, c.DA_AREA_ROSSA_AD_OGGETTI]
         self.indiceFSM = 0
-        self.angoloTarget = self.constants[self.indiceFSM][0]
-        '''
-        La forma che contiene tutti i tipi di riposta e' la seguente, ne metto uno per tipo di risposta
-        '''
+        self.angoloTarget = self.costantiFSM[self.indiceFSM][0]
         self.reply = {}
-        self.numeroDiAvantiPrimaDiRiorentarsi = 0
+        self.numeroDiAvantiPrimaDiRiorientarsi = 0
     
     def takeDecision(self, dati):
+        '''
+        Questo metodo prende in input i dati che mandano Arduino e Camera, e salva i dati nelle corrispettive strutture dati
 
+        @param dati (dict): dizionario contenente i dati del mondo visti da Arduino/Camera
+
+        '''
         if dati["ID"] == "Arduino":
             self.datiSensoriali = dati
             self.FSM()
             self.infoStatoDelMondo()
         
         if dati["ID"] == "Camera":
+            print "Arrivati dati dalla camera"
             self.datiCamera = dati
             self.analyzeDataFromCamera()
             self.reply = "ok camera"
         
 
     def analyzeDataFromCamera(self):
+        '''
+        Questo metodo permette di analizzare i dati che arrivano dalla camera, e di conseguenza settare una modalita' (ovvero avanzare nella FSM) per il robot.
+        '''
         if self.modalita == "presa-rilascio":
+            print "Presa-rilascio dalla camera e': ", self.datiCamera["presa-rilascio"], ", ma sono gia' in modalita' presa-rilascio, cazzomene"
             return
         if self.datiCamera["presa-rilascio"] == 1:
             print "Posso prendere l'oggetto"
@@ -97,8 +110,10 @@ class RobotBrain(object):
             self.modalita = "avvicinamento"
     
     def FSM(self):
-
-        con_oggetto = 0 #da modificare quando si aggiungeranno gli IR
+        '''
+        Questo metodo rappresenta la FSM che fa avanzare il robot nel mondo.
+        '''
+        con_oggetto = 1          #da modificare quando si aggiungeranno gli IR
         if self.indiceFSM%2 == 0:
             con_oggetto = 0
         
@@ -106,7 +121,7 @@ class RobotBrain(object):
             print "[INIT] Angolo da raggiungere: ", self.angoloTarget
             self.reply = {
                 "comando": 0,
-                "sterzatura_preferita": self.constants[self.indiceFSM][1],
+                "sterzatura_preferita": self.costantiFSM[self.indiceFSM][1],
                 "con_oggetto": con_oggetto,
                 "angolo_target": self.angoloTarget,
                 "verso_rotazione": self.determinaOrientamento()
@@ -122,8 +137,8 @@ class RobotBrain(object):
             self.reply = {
                 "comando": 1,
                 "con_oggetto": con_oggetto,
-                "ruota_sx": 230,
-                "ruota_dx": 220
+                "ruota_sx": 190,
+                "ruota_dx": 195
             }
             return
 
@@ -137,8 +152,8 @@ class RobotBrain(object):
                 "con_oggetto": con_oggetto,
                 "angolo_target": self.angoloTarget,
                 "verso_rotazione": self.datiCamera["verso_rotazione"],
-                "ruota_sx": 230,
-                "ruota_dx": 220
+                "ruota_sx": 190,
+                "ruota_dx": 195
             }
             return
 
@@ -148,18 +163,25 @@ class RobotBrain(object):
                 "con_oggetto": con_oggetto
             }
             self.indiceFSM += 1
-            self.angoloTarget = self.constants[self.indiceFSM]
+            self.angoloTarget = self.costantiFSM[self.indiceFSM][0]
             self.modalita = "init"
             print "[PRESA-RILASCIO] Mi posso mettere in modalita' init e ricominciare la FSM"
             return
 
 
     def miDevoOrientare(self, con_oggetto):
+        '''
+        Questo metodo controlla se il robot si deve orientare di nuovo o meno in base ad alcune informazioni:
+        - modalita del robot
+        - numero di passi in avanti fatti liberamente
+        - incontro con un ostacolo recente
+
+        @returns bool: ritorna True o False in base al fatto che si deve orientare di nuovo o meno 
+        '''
         
         if self.modalita == "movimento":
-            if self.numeroDiAvantiPrimaDiRiorentarsi == 7:
-                #devo trovare un algoritmo che mi permette di riorientarmi in base alla bussola e all'angolo target            
-                self.numeroDiAvantiPrimaDiRiorentarsi = 0
+            if self.numeroDiAvantiPrimaDiRiorientarsi == 3:
+                self.numeroDiAvantiPrimaDiRiorientarsi = 0
                 self.reply = {
                     "comando": 0,
                     "con_oggetto": con_oggetto,
@@ -171,17 +193,17 @@ class RobotBrain(object):
         
             if self.datiSensoriali["vengoDa"] == 0:
                 print "Il robot ha identificato un ostacolo, gli do' la possibilita' di fare manovra prima di riorentarsi"
-                self.numeroDiAvantiPrimaDiRiorentarsi = 0
+                self.numeroDiAvantiPrimaDiRiorientarsi = 0
                 return False
             if self.datiSensoriali["vengoDa"] == 1:
-                self.numeroDiAvantiPrimaDiRiorentarsi += 1
-                print "Il robot ha la strada libera, gli faccio incrementare il contatore per arrivare ad orientarsi di nuovo, ", self.numeroDiAvantiPrimaDiRiorentarsi
+                self.numeroDiAvantiPrimaDiRiorientarsi += 1
+                print "Il robot ha la strada libera, gli faccio incrementare il contatore per arrivare ad orientarsi di nuovo, ", self.numeroDiAvantiPrimaDiRiorientarsi
                 return False
         
         if self.modalita == "avvicinamento":
             if self.datiSensoriali["vengoDa"] == 0:
                 print "Nella fase di avvicinamento il robot ha incontrato un ostacolo, lo faccio camminare in avanti prima di farlo orienare con l'angolo target dato inizialmente"
-                self.numeroDiAvantiPrimaDiRiorentarsi = 0
+                self.numeroDiAvantiPrimaDiRiorientarsi = 0
                 self.modalita = "movimento"
                 self.reply = {
                     "comando": 1,
@@ -189,13 +211,17 @@ class RobotBrain(object):
                     "ruota_sx": 230,
                     "ruota_dx": 220 
                 }
-                self.angoloTarget = self.constants[self.indiceFSM]
+                self.angoloTarget = self.costantiFSM[self.indiceFSM][0]
                 return False
             return False
 
     def determinaOrientamento(self):
         '''
-        Determino il verso di rotazione da fare in base all'angolo target da raggiungere
+        Metodo che determina il verso di rotazione da fare in base all'angolo target da raggiungere
+
+        @returns int: il metodo ritorna 0 se il robot deve ruotare da sx verso dx, 1 se il robot deve ruotare da dx verso sx,
+                      -1 se il robot non deve ruotare
+
         '''
         
         angolo_attuale = self.datiSensoriali["buss"]
@@ -213,6 +239,13 @@ class RobotBrain(object):
         return -1
 
     def determinaAngolo(self, angolo):
+        '''
+        Questo metodo riporta l'angolo passato come input in mod360
+
+        @param angolo (int): angolo da riportare in mod360
+
+        @returns int: restituisce l'angolo portato in mod360
+        '''
         if angolo > 359:
             print "Angolo e' maggiore di 360, lo riporto in mod360"
             return angolo - 359
@@ -222,12 +255,25 @@ class RobotBrain(object):
         return angolo
 
     def differenzaAngoloRilevante(self, alfa, beta):
+        '''
+        Metodo che determina la differenza in valore assoluto fra due angoli
+
+        @param alfa (float): angolo
+        @param beta (float): angolo
+
+        @returns float: valore assoluto della differenza fra i due angoli
+        '''
+        
         if abs(beta-alfa)<5:
             return False
         else:
             return True
 
     def infoStatoDelMondo(self):
+        '''
+        Metodo che stampa le informazioni sul mondo in base ai dati forniti da Arduino e Camera
+        '''
+
         print "\nStato del robot"
         print "Modalita': ", self.modalita
         print "Indice FSM: ",  self.indiceFSM
