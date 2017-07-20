@@ -1,5 +1,6 @@
 import socket
 import sys
+import 
 from robotbrain import RobotBrain
 
 class Robot(object):
@@ -7,6 +8,7 @@ class Robot(object):
     def __init__(self):
         print "Init server"
         self.HOST = "192.168.0.100"
+        self.grabber = FramesGrabber()
         self.PORT = 1931
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         '''
@@ -40,13 +42,13 @@ class Robot(object):
         '''
         self.socket.listen(2)
         print "Il server si e' messo in ascolto"
-
+        self.grabber.start()
         while True:
             connessione, indirizzo = self.socket.accept()
             print "Connessione da ", indirizzo
             dati = connessione.recv(256)
             dati = eval(dati)
-
+            frame = self.grabber.getFrame()
             self.brain.takeDecision(dati)
             connessione.send(str(self.brain.reply))
 
