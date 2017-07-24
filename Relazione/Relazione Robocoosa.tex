@@ -12,6 +12,13 @@
 \usetikzlibrary{positioning}
 \definecolor{burntorange}{cmyk}{0,0.51,1,0}\definecolor{processblue}{cmyk}{0.96,0,0,0}
 
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=black,  %choose some color if you want links to stand out
+}
+
 \title{Progetto di Robotica \\ \large Progettazione e Sviluppo di RoboHenree} % Title
 
 
@@ -459,7 +466,7 @@ Analizziamo ora i quattro stati della macchina a stati finiti e vediamo a causa 
 	\item \textbf{Movimento}: il robot si muove lunga una traiettoria rettilinea, evitando ostacoli in modo reattivo; inoltre nel momento in cui la sua angolazione non è quella indicata in init, allora si re-orienta, tornando allo stato init;
 	\item \textbf{Elabora frame}: il server acquisisce un frame del mondo, lo elabora e determina se ha individuato l'area target (qualunque sia l'area, oggetti o goal); se l'elaborazione del frame mi dà esito negativo, allora ritorno in modalità movimento, altrimenti imposto il robot in modalità avvicinamento;
 	\item \textbf{Avvicinamento}: il robot diminuisce la velocità dei suoi motori, avvicinandosi all'oggetto o all'area individuata; il sistema ha sempre bisogno di acquisire frame in questa fase, in quanto cerca di allinearsi alla traiettoria verso l'oggetto; se l'oggetto o l'area risultano essere ancora lontani, allora torna allo stato precedente, altrimenti passa allo stato successivo;
-	\item \textbf{Presa/Rilascio}: il robot si trova vicino l'oggetto o l'area, inizia muoversi molto lentamente fino a quando non lo percepisce. Se lo percepisce, allora lo prende o lo rilascia, altrimenti continua a muoversi lentamente fino a quando non lo percepisce; nel momento in cui cattura o rilascia l'oggetto allora è pronto per un nuovo percorso da fare, passando allo stato init.
+	\item \textbf{Presa/Rilascio}: il robot si trova vicino l'oggetto o l'area, inizia muoversi molto lentamente fino a quando non lo percepisce. Se lo percepisce, allora lo cattura o lo rilascia, altrimenti continua a muoversi lentamente fino a quando non lo percepisce; nel momento in cui cattura o rilascia l'oggetto allora è pronto per un nuovo percorso da fare, passando allo stato init.
 \end{itemize}
 
 \subsection{Schema circuitale}
@@ -475,20 +482,18 @@ Lo schema circuitale rappresenta il riassunto di tutte quante le componenti che 
 
 \section{Algoritmi e implementazione}
 
-\subsection{Navigazione}
-Ci occupiamo adesso di una parte molto importante nello sviluppo del robot: la navigazione all'interno della mappa. Tale parte risulta essere molto importante in quanto, avere un buon algoritmo per la navigazione del robot, può permettere di ridurre il tempo impiegato per raggiungere i vari obiettivi, aumentando così il punteggio per la classifica finale.
+\subsection{Movimento del robot}
+Il movimento del robot all'interno della mappa è una delle parti più impegnative della competizione. Un buon algoritmo di navigazione permette infatti di raggiungere le aree target in modo più rapido, guadagnandone così in punti classifica.
 
-Durante lo sviluppo del progetto, gli approcci per la navigazione proposti e testati sono stati due: uno basato sull'algoritmo A* con ciclo percezione-pianificazione-azione, l'altro basato su un approccio reattivo con una guida sui movimenti da fare.
+Gli algoritmi di movimento provati durante tutta la fase di progettazione sono stati due: A* con ciclo percezione-pianificazione-azione, e un algoritmo di movimento basato sulle proprietà reattive del robot.
 
-Il secondo approccio ci è sembrato fin da subito il migliore, in quanto il primo richiedeva una precisione negli spostamenti, e un tempo di ciclo di esecuzione elevato. Notiamo inoltre come un'elevata precisione richiede anche l'uso di più sensori, cosa che ci potrebbe fare sforare il budget imposto dalla competizione.
+L'algoritmo A* è sembrato essere il migliore in quanto a precisione. L'idea alla base della nostra implementazione di A* per la competizione, era un ciclo percezione-pianificazione-azione. Con un tale ciclo di esecuzione, il robot ha la possibilità di costruirsi una rappresentazione interna della mappa, andando a segnare quelle celle nella mappa in cui vi sono ostacoli utilizzando le informazioni sensoriali durante la fase di percezione. Dopo aver percepito il mondo, allora il server provvederà a trovare un piano, ed infine il server comunicherà al robot come agire sul mondo. Un approccio del genere permette di conoscere sempre la posizione del robot, partendo dal presupposto di avere sempre movimenti precisi in qualsiasi condizione (peso e batterie meno cariche in primis).
 
-Il mix portato dal secondo approccio ci permette invece di sfruttare la bussola a pieno. Infatti l'idea che sta alla base del nostro algoritmo di movimento è quella di muoversi verso un'area target muovendosi e rispettando sempre un certo valore dato dalla bussola. Infatti a partire da una posizione di partenza nota, si determina l'angolo con il quale il robot punta verso l'altra area in posizione nota. Tale angolo lo abbiamo chiamato \textbf{angolo target}. Dopo aver preso i dati sugli angoli, allora l'algoritmo di navigazione prevede una serie di movimenti in avanti con un'eventuale re-orientazione durante il percorso. La re-orientazione viene dettata dal server, che terrà conto di quando effettuarla.
+Il secondo algoritmo di movimento si basa sullo sfruttare i valori che la bussola restituisce. L'idea è quella di non avere una mappa del mondo come per A*, ma piuttosto imporre al robot di muoversi in modo più o meno rettilineo mantenendo un certo valore della bussola. Il tutto viene completato da una gestione totalmente reattiva degli ostacoli: il robot stesso gestirà la presenza degli ostacoli, e seguendo delle indicazioni minime che il server gli fornisce, li eviterà in modo istantaneo, con un'eventuale re-orientazione alla fine del processo di superamento degli ostacoli. Infine, questo approccio non richiede una precisione elevata per gli spostamenti. Infatti l'algoritmo tiene conto degli spostamenti che il robot ha compiuto, determinando quando il robot dovrà re-orientarsi per mantenere la traiettoria rettilinea.
 
-Questo approccio inoltre permette di avere un robot totalmente reattivo per quanto riguarda gli ostacoli da evitare, con l'unico sforzo di definire una politica ben precisa a priori. 
+Dopo aver testato entrambi gli approcci sul campo, è risultato lampante quanto il secondo approccio è di gran lunga più veloce del primo. Sempre il secondo approccio permette inoltre di non avere un'elevata precisione per il setting degli attuatori, in quanto vi è la fase di re-orientazione che permette al robot di re-allinearsi alla traiettoria designata. Notiamo infine però che l'approccio scelto dipende interamente dai dati forniti dalla bussola. Presenza di forti campi magnetici esterni potrebbero causare il tilt della stessa, andando così a invalidare l'algoritmo.
 
-Risulta quindi chiaro che un aspetto positivo di questo approccio è il non dover per forza tarare gli attuatori ad un grado di precisione elevato, in quanto una fase di re-orientazione ci permette di ritornare lungo la strada verso l'area target. Il problema di questo approccio si presenta nel momento in cui campi magnetici esterni influenzano la bussola, facendo rilevare dati sbagliati, con la possibilità che un'eventuale re-orienting non vada a buon fine.
-
-Figure che spiegano il concetto dell'algoritmo di movimento sono le Figure \ref{Fig: movimento_1}, \ref{Fig: movimento_2}, \ref{Fig: movimento_3}, \ref{Fig: movimento_4}.
+Le Figure \ref{Fig: movimento_1}, \ref{Fig: movimento_2}, \ref{Fig: movimento_3}, \ref{Fig: movimento_4}, spiegano l'idea che sta alla base dell'algoritmo di navigazione sviluppato.
 
 \begin{figure}[H]
 	\begin{center}

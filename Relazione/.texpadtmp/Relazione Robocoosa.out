@@ -1,0 +1,22 @@
+\BOOKMARK [1][-]{section.1}{Prefazione}{}% 1
+\BOOKMARK [1][-]{section.2}{Introduzione}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{La Robotica}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Tipi di schede}{section.2}% 4
+\BOOKMARK [3][-]{subsubsection.2.2.1}{Confronto}{subsection.2.2}% 5
+\BOOKMARK [1][-]{section.3}{La RoboCup}{}% 6
+\BOOKMARK [2][-]{subsection.3.1}{La competizione e le regole}{section.3}% 7
+\BOOKMARK [1][-]{section.4}{Hardware}{}% 8
+\BOOKMARK [2][-]{subsection.4.1}{Arduino}{section.4}% 9
+\BOOKMARK [2][-]{subsection.4.2}{Sensori}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.3}{Attuatori}{section.4}% 11
+\BOOKMARK [1][-]{section.5}{Software}{}% 12
+\BOOKMARK [2][-]{subsection.5.1}{Python}{section.5}% 13
+\BOOKMARK [2][-]{subsection.5.2}{OpenCV}{section.5}% 14
+\BOOKMARK [1][-]{section.6}{RoboHenree}{}% 15
+\BOOKMARK [1][-]{section.7}{Progettazione}{}% 16
+\BOOKMARK [2][-]{subsection.7.1}{UML}{section.7}% 17
+\BOOKMARK [2][-]{subsection.7.2}{Pianificazione delle azioni}{section.7}% 18
+\BOOKMARK [2][-]{subsection.7.3}{Schema circuitale}{section.7}% 19
+\BOOKMARK [1][-]{section.8}{Algoritmi e implementazione}{}% 20
+\BOOKMARK [2][-]{subsection.8.1}{Movimento del robot}{section.8}% 21
+\BOOKMARK [2][-]{subsection.8.2}{Comunicazione con il server}{section.8}% 22
