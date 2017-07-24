@@ -1,3 +1,5 @@
+\select@language {italian}
+\select@language {italian}
 \contentsline {section}{\numberline {1}Prefazione}{3}{section.1}
 \contentsline {section}{\numberline {2}Introduzione}{3}{section.2}
 \contentsline {subsection}{\numberline {2.1}La Robotica}{4}{subsection.2.1}
@@ -18,5 +20,6 @@
 \contentsline {subsection}{\numberline {7.2}Pianificazione delle azioni}{20}{subsection.7.2}
 \contentsline {subsection}{\numberline {7.3}Schema circuitale}{21}{subsection.7.3}
 \contentsline {section}{\numberline {8}Algoritmi e implementazione}{22}{section.8}
-\contentsline {subsection}{\numberline {8.1}Movimento del robot}{22}{subsection.8.1}
-\contentsline {subsection}{\numberline {8.2}Comunicazione con il server}{25}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.1}Comunicazione con il server e scelta delle azioni}{22}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Movimento del robot}{24}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Elaborazione dei frame}{26}{subsection.8.3}

@@ -18,5 +18,6 @@
 \BOOKMARK [2][-]{subsection.7.2}{Pianificazione delle azioni}{section.7}% 18
 \BOOKMARK [2][-]{subsection.7.3}{Schema circuitale}{section.7}% 19
 \BOOKMARK [1][-]{section.8}{Algoritmi e implementazione}{}% 20
-\BOOKMARK [2][-]{subsection.8.1}{Movimento del robot}{section.8}% 21
-\BOOKMARK [2][-]{subsection.8.2}{Comunicazione con il server}{section.8}% 22
+\BOOKMARK [2][-]{subsection.8.1}{Comunicazione con il server e scelta delle azioni}{section.8}% 21
+\BOOKMARK [2][-]{subsection.8.2}{Movimento del robot}{section.8}% 22
+\BOOKMARK [2][-]{subsection.8.3}{Elaborazione dei frame}{section.8}% 23

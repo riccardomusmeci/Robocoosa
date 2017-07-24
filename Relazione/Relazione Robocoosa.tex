@@ -2,12 +2,12 @@
 
 \usepackage[T1]{fontenc} 
 \usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
 
 \usepackage{graphicx} % Required for the inclusion of images
 \graphicspath{ {Immagini/} }
 \usepackage{float}
 \usepackage{eurosym}
-
 \usepackage{tikz}
 \usetikzlibrary{positioning}
 \definecolor{burntorange}{cmyk}{0,0.51,1,0}\definecolor{processblue}{cmyk}{0.96,0,0,0}
@@ -75,7 +75,7 @@ Descriviamo brevemente di cosa si occupa ciascun blocco:
 	\item \textbf{Governo}: rappresenta la capacità di connettere in maniera intelligente azione e percezione. Tale sistema è in grado di guidare l’esecuzione dell’azione nel rispetto degli obiettivi imposta da una pianificazione del compito e dai vincoli imposti dal robot e dall’ambiente.\end{itemize}
 
 \subsection{Tipi di schede}
-Abbiamo già introdotto le schede Arduino e Raspberry, è importante adesso capire analogie e differenze. 
+Sono state già introdotte le schede Arduino e Raspberry, è importante adesso capire analogie e differenze. 
 
 Arduino è un microcontrollore e come tale, possiede caratteristiche computazionali inferiori rispetto a qualsiasi altro dispositivo capace di emulare un computer. Schede come Arduino sono in grado di leggere un determinato input e trasformarlo in un output sotto forma di un’azione, come l’attivazione di un motore, l’accensione di un LED o qualsiasi altro comando inviato ad un attuatore. Inoltre he delle GPIO sia analogiche che digitali, a differenza del Raspberry per il quale sono solo digitali. 
 
@@ -98,7 +98,7 @@ Una valida alternativa è il Raspberry, il quale non è un microcontrollore ma u
 \end{figure}
 
 \subsubsection{Confronto}
-Una volta descritte le funzionalità e le caratteristiche di Arduino e Raspberry, facciamo un confronto diretto tra le due possibili alternative. Nell’ambito del nostro progetto, si possiede un budget massimo di 100 Euro, questo ci ha portato a dover scegliere una delle due. Dal punto di vista della costruzione fisica del robot, non vi è alcuna differenza, poiché per entrambe vanno scelte accuratamente le singole componenti da montare nel proprio robot. Alla fine abbiamo scelto Arduino che, essendo un semplice microcontrollore, deve soltanto eseguire dei comandi ricevuti in input e non può essere fatta alcun tipo di elaborazione a causa delle risorse limitate. Questo impone, necessariamente, un’architettura client-server, dove il secondo dovrà elaborare le informazioni per l’Arduino. Questo tipo di architettura consente una velocità di analisi dei dati provenienti dai sensori molto elevata a discapito di una comunicazione più lenta rispetto a quelle del Raspberry. Elenchiamo adesso i pro e i contro di tale scelta.	
+Una volta descritte le funzionalità e le caratteristiche di Arduino e Raspberry, è utile effettuare un confronto diretto tra le due possibili alternative. Dal punto di vista della costruzione fisica del robot, non vi è alcuna differenza, poiché per entrambe vanno scelte accuratamente le singole componenti da utilizzare per l'interazione con il robot. Alla fine la scelta è ricaduta su Arduino, che, essendo un semplice microcontrollore, deve soltanto eseguire dei comandi ricevuti in input, non consentendo elaborazioni complesse con esso. Questo impone, necessariamente, un’architettura client-server, dove il secondo dovrà elaborare le informazioni per Arduino. Questo tipo di architettura consente una velocità di analisi dei dati provenienti dai sensori molto elevata a discapito di una comunicazione più lenta rispetto a quelle del Raspberry. Elenchiamo adesso i pro e i contro di tale scelta.	
        I pro sono:
 \begin{itemize}
 	\item Costo Basso.
@@ -111,7 +111,7 @@ Una volta descritte le funzionalità e le caratteristiche di Arduino e Raspberry
 	\item Complessità nella gestione sincronizzata delle varie risorse.
 	\item Sviluppo di protocolli di comunicazione flessibili e leggeri.
 	\item Difficoltà nell’esecuzione di azioni percezione-azione qualora sono coinvolte elaborazioni visuali. 
-\end{itemize}Come già detto, la nostra scelta è caduta su Arduino in quanto abbiamo preferito avere una architettura client-server, dove il client, ovvero Arduino, si occupa della parte reattiva del robot, mentre il server funge da "direttore" per il client, utilizzando le elevate prestazioni computazionali a disposizione, decidendo così le azioni che il robot deve compiere.
+\end{itemize}Come già detto, la scelta è caduta su Arduino in quanto si è preferito avere una architettura client-server, dove il client, ovvero Arduino, si occupa della parte reattiva del robot, mentre il server funge da "direttore" per il client, utilizzando le elevate prestazioni computazionali a disposizione, decidendo così le azioni che il robot deve compiere.
 
 \section{La RoboCup}
 
@@ -397,9 +397,9 @@ Ecco alcune foto di RoboHenree.
 \section{Progettazione}
 Introduciamo adesso le scelte progettuali fatte per RoboHenree. Come già accennato in precedenza, la scelta di Arduino ha imposto lo sviluppo di un'architettura client-server in cui Arduino, ovvero il client, comunica costantemente con il server che, secondo una politica ben definita, comunica ad Arduino quali azioni compiere. 
 
-Per quanto riguarda gli approcci usati per la progettazione del robot, si è deciso che, per la competizione proposta, un mix di approcci reattivo e pianificato sarebbe stata la soluzione migliore. Infatti, il robot è in grado, grazie ai sensori ad infrarosso, di poter evitare gli ostacoli in maniera reattiva, ma mantenendo comunque un andamento e degli obiettivi da raggiungere decisi da una fase di pianificazione server-side.
+Per quanto riguarda gli approcci usati per la progettazione del robot, si è deciso che, per la competizione proposta, un mix di approcci reattivo e pianificato sarebbe stata la soluzione migliore. Infatti, il robot è in grado, grazie ai sensori ad infrarossi, di poter evitare gli ostacoli in maniera reattiva, ma mantenendo comunque un andamento e degli obiettivi da raggiungere decisi da una fase di pianificazione server-side.
 
-Il sistema che abbiamo sviluppato prevede quindi le seguenti parti.
+Il sistema sviluppato prevede quindi le seguenti parti.
 \begin{itemize}
 	\item Arduino: percepisce il mondo circostante, agendo con un approccio reattivo in base alla percezione del mondo. Esso ha comunque delle regole da rispettare che gli vengono dettate del server.
 	\item Server: decide quali azioni il robot deve compiere (movimento, rotazioni, presa/rilascio oggetti), secondo un piano definito a priori. 
@@ -426,7 +426,7 @@ Introduciamo adesso le varie parti della progettazione di RoboHenree: diagrammi 
 \subsection{UML}
 UML, acronimo di Unified Modeling Language, è un linguaggio di modellizzazione utilizzato in ingegneria del software per documentare soluzioni progettuali di sistemi anche complessi. L’UML è, dunque, un metodo per descrivere l’architettura di un sistema in dettaglio. La sua vera forza consiste nel fatto che il processo di disegno del sistema può essere effettuata in modo tale che i clienti, gli analisti, i programmatori e chiunque altro sia coinvolto nel sistema di sviluppo possa capire ed esaminare in modo efficiente il sistema e prendere parte alla sua costruzione in modo attivo. Inoltre è basato sul paradigma orientato agli oggetti. 
 
-Prima di scrivere il codice per RoboHenree, abbiamo tracciato dei diagrammi UML per sapere quali classi creare, con quali metodi, e capirne la comunicazione. Questo è il primo passo da compiere prima di iniziare la realizzazione di qualsiasi progetto perché rappresenta una linea guida per la stesura del codice ed evitare quindi di scrivere un programma poco leggibile e talvolta errato. 
+Prima di scrivere il codice per RoboHenree, sono stati tracciati dei diagrammi UML per sapere quali classi creare, con quali metodi, e capirne la comunicazione. Questo è il primo passo da compiere prima di iniziare la realizzazione di qualsiasi progetto perché rappresenta una linea guida per la stesura del codice ed evitare quindi di scrivere un programma poco leggibile e talvolta errato. 
 
 Gli schemi UML realizzati sono proposti nelle figure.
 
@@ -434,7 +434,7 @@ Gli schemi UML realizzati sono proposti nelle figure.
 \subsection{Pianificazione delle azioni}
 \label{Sec: FSM}
 
-Una macchina a stati finiti è un modello che permette di descrivere con precisione il comportamento di un sistema. Le caratteristiche di una macchina a stati finiti fanno si che un suo utilizzo permette di avere un controllo totale su un sistema. Nel nostro caso ci permette di sapere in che stato si trova il robot, in qualsiasi condizione.
+Una macchina a stati finiti è un modello che permette di descrivere con precisione il comportamento di un sistema. Le caratteristiche di una macchina a stati finiti fanno si che un suo utilizzo permette di avere un controllo totale su un sistema. Nel nostro caso, permette di sapere in che stato si trova il robot, in qualsiasi condizione.
 
 RoboHenree viene comandato secondo una sequenza di azioni definite dalla macchina a stati finiti mostrata in figura.
 
@@ -470,7 +470,7 @@ Analizziamo ora i quattro stati della macchina a stati finiti e vediamo a causa 
 \end{itemize}
 
 \subsection{Schema circuitale}
-Lo schema circuitale rappresenta il riassunto di tutte quante le componenti che costituiscono il nostro robot. Per poter realizzare tale schema abbiamo utilizzato il software open source Fritzing che, tramite interfaccia grafica permette di comporre le varie parti elettroniche presenti in un circuito. Di seguito viene mostrato lo schema del nostro progetto, realizzato a partire dall’Arduino Mega 2560 R3 e assemblato a partire dalle componenti descritte alla sezione \ref{subsec: sensori}.
+Lo schema circuitale rappresenta il riassunto di tutte quante le componenti che costituiscono il nostro robot. Per poter realizzare tale schema abbiamo utilizzato il software open source Fritzing che, tramite interfaccia grafica permette di comporre le varie parti elettroniche presenti in un circuito. Di seguito viene mostrato lo schema di RoboHenree, realizzato a partire dall’Arduino Mega 2560 R3 e assemblato a partire dalle componenti descritte alla sezione \ref{subsec: sensori}.
 
 \begin{figure}[H]
 	\begin{center}
@@ -481,6 +481,46 @@ Lo schema circuitale rappresenta il riassunto di tutte quante le componenti che 
 \end{figure}
 
 \section{Algoritmi e implementazione}
+La sezione tratta l'approccio utilizzato per la comunicazione fra Arduino e server, l'algoritmo di movimento, e l'algoritmo di elaborazione del frame.
+
+\subsection{Comunicazione con il server e scelta delle azioni}
+L'architettura scelta per il robot prevede necessariamente la comunicazione tra un client, Arduino, ed un server. L'idea è quella di sfruttare il protocollo TCP, un protocollo che rende affidabile la comunicazione dati tra client e server, per le comunicazione fra le due entità.
+
+In questo scenario si ha che:
+\begin{itemize}
+	\item Arduino avvia una nuova connessione TCP, mandando una richiesta al server su una determinata porta.
+	\item Il server è in ascolto su una determinata porta, e accetta di stabilire una connessione, processando la richiesta del client ed eventualmente rispondere a tale richiesta.
+\end{itemize}
+
+La comunicazione fra Arduino e il server è permessa dal modulo Wi-Fi ESP8266 presentato nella sezione \ref{subsec: sensori}. Il modulo prevede dei comandi di default che gli consentono di instaurare una connessione TCP con un server. 
+
+Lato server è stata implementata una classe, \textbf{Robot}, che permettesse di aprire la connessione tra Arduino e il server. Il server ascolta eventuali richieste di connessione sulla porta 1931.
+
+Client e server si scambiano costantemente informazioni del tipo:
+\begin{itemize}
+	\item \textbf{Sensoriali}: il client comunica al server il proprio stato e lo stato del mondo secondo i suoi sensori.
+	\item \textbf{Comandi}: il server comunica al client quali azioni compiere nel mondo dopo aver effettuato delle elaborazioni.
+\end{itemize}
+
+I messaggi che client e server si scambiano sono in formato \textbf{JSON}, un formato di testo completamente indipendente dal linguaggio di programmazione, ma che utilizza convenzioni conosciute dai programmatori di linguaggi della famiglia del C, come Python per l'appunto.
+
+Il server decide quali azioni fare compiere al robot in base alla macchina a stati finiti definita in \ref{Sec: FSM}. Infatti quest'ultimo terrà conto dello stato in cui si trova il robot, andando a determinare la permanenza o l'avanzamento dello stato in base alle informazioni sensoriali e all'elaborazione del frame.
+
+Utilizzando il formato JSON, i comandi che il server manderà ad Arduino sono:
+\begin{itemize}
+	\item \textbf{Comando 0}: il robot può ruotare per raggiungere un angolo target.
+	\item \textbf{Comando 1}: il robot può muoversi in modo rettilineo con una determinata velocità.
+	\item \textbf{Comando 2}: il robot si può avvicinare all'oggetto/area target, diminuendo la velocità, mantenendo una traiettoria lineare verso il target.
+	\item \textbf{Comando 3}: il robot può catturare/rilasciare l'oggetto.
+\end{itemize}
+
+Il server inoltre, nel decidere i comandi da mandare ad Arduino, tiene conto di altre informazioni come:
+\begin{itemize}
+	\item \textbf{Presenza dell'oggetto}: in base al fatto che l'oggetto è stato catturato o meno, allora il server comunica ad Arduino quali sensori utilizzare per evitare gli ostacoli. Infatti se l'oggetto non è presente, allora la barra sarà alzata e bisognerà usare i sensori sul telaio del robot, viceversa bisognerà usare i sensori che si trovano sulla sbarra.
+	\item \textbf{Sterzata preferita}: in base all'area target del robot, il server comunica come è preferibile affrontare gli ostacoli frontali. La politica  dettata da questa informazione cerca di fare in modo che il robot, nel re-orientarsi punti con la camera sempre verso l'area target, evitando quindi che il robot si perda. 
+\end{itemize}
+
+È importante sottolineare come queste informazioni vengono automaticamente dedotte dal server, senza che Arduino entri in gioco.
 
 \subsection{Movimento del robot}
 Il movimento del robot all'interno della mappa è una delle parti più impegnative della competizione. Un buon algoritmo di navigazione permette infatti di raggiungere le aree target in modo più rapido, guadagnandone così in punti classifica.
@@ -529,25 +569,8 @@ Le Figure \ref{Fig: movimento_1}, \ref{Fig: movimento_2}, \ref{Fig: movimento_3}
 	\end{center}
 \end{figure}
 
-\subsection{Comunicazione con il server}
+\subsection{Elaborazione dei frame}
 
-L'architettura scelta per il robot prevede necessariamente la comunicazione tra un client, Arduino, ed un server che comunicano con una connessione TCP. In particolare:
-\begin{itemize}
-	\item Arduino avvia una nuova connessione TCP, mandando una richiesta al server su una determinata porta.
-	\item Il server in ascolto su una porta e accetta di stabilire una connessione, processando la richiesta del client ed eventualmente rispondere.
-\end{itemize}
-
-La comunicazione fra Arduino e il server è permessa dal modulo Wi-Fi ESP8266 presentato nella sezione \ref{subsec: sensori}. Il modulo prevede dei comandi di default che gli consentono di instaurare una connessione TCP con un server. 
-
-Lato server è stata implementata una classe, \textbf{Robot}, che permettesse di aprire la connessione tra Arduino e il server. Il server ascolta eventuali richieste di connessione sulla porta 1931.
-
-Client e server si scambiano costantemente informazioni del tipo:
-\begin{itemize}
-	\item \textbf{Sensoriali}: il client comunica al server lo stato del mondo secondo i suoi sensori.
-	\item \textbf{Comandi}: il server comunica al client quali azioni compiere nel mondo.
-\end{itemize}
-
-I messaggi che client e server si scambiano sono in formato \textbf{JSON}, un formato di testo completamente indipendente dal linguaggio di programmazione, ma che utilizza convenzioni conosciute dai programmatori di linguaggi della famiglia del C, come Python per l'appunto.
 
 
 
