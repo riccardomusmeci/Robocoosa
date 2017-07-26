@@ -3,7 +3,6 @@
 \usepackage[T1]{fontenc} 
 \usepackage[utf8]{inputenc}
 \usepackage[italian]{babel}
-
 \usepackage{graphicx} % Required for the inclusion of images
 \graphicspath{ {Immagini/} }
 \usepackage{float}
@@ -11,16 +10,14 @@
 \usepackage{tikz}
 \usetikzlibrary{positioning}
 \definecolor{burntorange}{cmyk}{0,0.51,1,0}\definecolor{processblue}{cmyk}{0.96,0,0,0}
-
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true, %set true if you want colored links
     linktoc=all,     %set to all if you want both sections and subsections linked
     linkcolor=black,  %choose some color if you want links to stand out
 }
-
+\linespread{2}\selectfont
 \title{Progetto di Robotica \\ \large Progettazione e Sviluppo di RoboHenree} % Title
-
 
 \author{Riccardo Musmeci, Carlo Nuccio, Danilo Pipitone} % Author name
 
@@ -28,7 +25,6 @@
 
 
 \begin{document}
-
 \maketitle % Insert the title, author and date
 
 \tableofcontents
@@ -113,6 +109,7 @@ Una volta descritte le funzionalità e le caratteristiche di Arduino e Raspberry
 	\item Difficoltà nell’esecuzione di azioni percezione-azione qualora sono coinvolte elaborazioni visuali. 
 \end{itemize}Come già detto, la scelta è caduta su Arduino in quanto si è preferito avere una architettura client-server, dove il client, ovvero Arduino, si occupa della parte reattiva del robot, mentre il server funge da "direttore" per il client, utilizzando le elevate prestazioni computazionali a disposizione, decidendo così le azioni che il robot deve compiere.
 
+\pagebreak
 \section{La RoboCup}
 
 La \textbf{RoboCup} è la competizione organizzata dal \textit{RoboticsLab} per gli studenti del corso di laurea magistrale in Ingegneria Informatica. Tale competizione rappresenta un modo per promuovere la ricerca e la sperimentazione nel campo della robotica e dell'intelligenza artificiale. 
@@ -155,7 +152,7 @@ Le regole generali previste dalla RoboCup sono le seguenti.
 			\item Match: 10 minuti effettivi di gioco più un tempo bonus
 		\end{itemize}
 	\item \textbf{Timeout}: Il referente di Team può chiedere un timeout (max 2 volte per un tempo massimo totale di 5 minuti) al fine di modificare le impostazioni hardware e software del robot. L’hardware del robot può essere sostituito con altro hardware solo se precedentemente presentato e computato nella lista dell’hardware accettato dalla commissione.
-	\item \textbf{Tempo bonus}: Il bonus è conteggiato in secondi. Si guadagnano 6 sec di bonus ogni euro risparmiato. La stima è effettuata per arrotondamento all’intero più vicino (1.7 euro = 12 secondi).
+	\item \textbf{Tempo bonus}: Il bonus è conteggiato in secondi. Si guadagnano 6 sec di bonus ogni euro risparmiato. La stima è effettuata per arrotondamento all’intero più vicino (1.7 \euro{} = 12 secondi).
 	\item \textbf{Budget}: : La spesa massima del progetto deve essere di 100\euro{}. Ogni componente hardware deve essere corredato da bolla di acquisto o dal prezzo di mercato (sito del produttore) al fine di comprovarne il valore.
 	\item Il robot deve essere autonomo.
 	\item Il robot deve avere una dimensione massima di 30X40X40 cm.
@@ -251,6 +248,7 @@ I punteggi assegnati per la classifica finale sono, in base alle fasi, i seguent
 	\end{tabular}
 \end{center}
 
+\pagebreak
 \section{Hardware}
 Questa sezione illustra dettagliatamente le componenti hardware usate per costruire il robot.
 
@@ -270,7 +268,7 @@ Come mostra la Figura \ref{Fig: arduino}, questo modello possiede 54 pin di inpu
 \begin{figure}[H]
 \begin{center}
 \includegraphics[scale=0.6]{arduino_uno}
-\caption{Arduino Mega 2560 R3}
+\caption{Arduino Uno}
 \label{Fig: arduino_uno}
 \end{center}
 \end{figure}
@@ -340,7 +338,7 @@ Un attuatore è un meccanismo che permette ad un agente, anche artificiale,  di 
 	\item \textbf{Servo motore}: La sua caratteristica principale è che può ruotare nell’intervallo [0-180] in entrambi i versi. Inoltre, sopporta un peso al massimo di 9 grammi ed è stato utilizzato per poter abbassare la bacchetta per poter intrappolare gli oggetti.
  		\begin{figure}[H]
 			\begin{center}
-			\includegraphics[scale=0.1]{servo}
+			\includegraphics[scale=0.2]{servo}
 			\caption{Servo SG90}
 			\label{Fig: servo}
 			\end{center}
@@ -354,8 +352,16 @@ Un attuatore è un meccanismo che permette ad un agente, anche artificiale,  di 
 			\end{center}
 		\end{figure}
 	\item \textbf{Motori DC}: sono i motori che permettono il movimento delle ruote del robot.
-\end{itemize}
-
+		\begin{figure}[H]
+			\begin{center}
+			\includegraphics[scale=0.1]{motori}
+			\caption{Motori DC}
+			\label{Fig: motori}
+			\end{center}
+		\end{figure}
+\end{itemize}
+
+\pagebreak
 \section{Software}
 Questa sezione illustra tutti gli strumenti che sono stati utilizzati per la progettazione e l'implementazione del software del robot.
 
@@ -374,13 +380,14 @@ OpenCV è una delle librerie più importanti utilizzata nella Computer Vision e 
 
 Essa supporta tutti i sistemi operativi e può essere utilizzata dai principali linguaggi di programmazione, Python nel nostro caso. In particolare, tale libreria viene utilizzata per processare e riconoscere gli oggetti catturati da una camera e tramite opportuni algoritmi si è in grado di emulare la capacità visiva umana.
 
+\pagebreak
 \section{RoboHenree}
 
 Ecco alcune foto di RoboHenree.
 
 \begin{figure}[H]
 \begin{center}
-\includegraphics[scale=0.07]{robohenree_1}
+\includegraphics[scale=0.13]{robohenree_1}
 \caption{Robohenree}
 \label{Fig: robohenree}
 \end{center}
@@ -388,12 +395,13 @@ Ecco alcune foto di RoboHenree.
 
 \begin{figure}[H]
 \begin{center}
-\includegraphics[scale=0.07]{robohenree_2}
-\caption{Robohenree in versione aggressiva}
+\includegraphics[scale=0.13]{robohenree_2}
+\caption{Robohenree}
 \label{Fig: robohenree}
 \end{center}
 \end{figure}
 
+\pagebreak
 \section{Progettazione}
 Introduciamo adesso le scelte progettuali fatte per RoboHenree. Come già accennato in precedenza, la scelta di Arduino ha imposto lo sviluppo di un'architettura client-server in cui Arduino, ovvero il client, comunica costantemente con il server che, secondo una politica ben definita, comunica ad Arduino quali azioni compiere. 
 
@@ -430,6 +438,23 @@ Prima di scrivere il codice per RoboHenree, sono stati tracciati dei diagrammi U
 
 Gli schemi UML realizzati sono proposti nelle figure.
 
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale=0.8]{package_diagram}
+\caption{Package Diagram}
+\label{Fig: package}
+\end{center}
+\end{figure}
+
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[scale=0.4]{class_diagram}
+\caption{Class Diagram}
+\label{Fig: class}
+\end{center}
+\end{figure}
+
 
 \subsection{Pianificazione delle azioni}
 \label{Sec: FSM}
@@ -459,7 +484,7 @@ RoboHenree viene comandato secondo una sequenza di azioni definite dalla macchin
 \end{center}
 
 
-Analizziamo ora i quattro stati della macchina a stati finiti e vediamo a causa di quale evento evolve ogni singolo stato.
+Analizziamo ora i cinque stati della macchina a stati finiti e vediamo a causa di quale evento evolve ogni singolo stato.
 
 \begin{itemize}
 	\item \textbf{Init}: questa è la fase in cui il robot dovrà ruotare fino a quando non raggiunge un determinato angolo; se l'angolo indicato non viene raggiunto, allora il robot continuerà a ruotare fino a quando non raggiunge l'angolo.
@@ -474,12 +499,13 @@ Lo schema circuitale rappresenta il riassunto di tutte quante le componenti che 
 
 \begin{figure}[H]
 	\begin{center}
-	\includegraphics[scale=0.15]{circuito}
+	\includegraphics[scale=0.3]{circuito}
 	\caption{Schema circuitale di RoboHenree}
 	\label{Fig: circuito}
 	\end{center}
 \end{figure}
 
+\pagebreak
 \section{Algoritmi e implementazione}
 La sezione tratta l'approccio utilizzato per la comunicazione fra Arduino e server, l'algoritmo di movimento, e l'algoritmo di elaborazione del frame.
 
@@ -570,8 +596,88 @@ Le Figure \ref{Fig: movimento_1}, \ref{Fig: movimento_2}, \ref{Fig: movimento_3}
 \end{figure}
 
 \subsection{Elaborazione dei frame}
+L'architettura di elaborazione dei frame è rappresentabile con il seguente schema:
 
+\begin{center}
+	\begin{tikzpicture}[-latex, auto,node distance=4cm and 6cm, semithick,state/.style={circle, rounded corners, minimum width=1cm, minimum height=0.5cm,  top color=white,bottom color=processblue!20, draw, processblue, text=blue,minimum width=0.5cm}]
+		\node[state] (A) {\textsc{Scegli Target}};
+		\node[state] (B) [right = of A] {\textsc{Verso Oggetto}};
+		\node[state] (C) [below = of B] {\textsc{Trova Area}};
+		\node[state] (D) [below = of A] {\textsc{Verso Area}};
+		\path (A) edge [loop left] node[left=0.15cm] {$0$} (A);
+  		\path (A) edge [bend left = 15] node[above=0.15cm] {$1$} (B); 
+  		\path (B) edge [loop above] node[right=0.15cm] {$0$} (B);  		
+  		\path (B) edge [bend left] node[left=0.15cm] {$1$} (C);
+  		\path (C) edge [loop below] node[right=0.15cm] {$0$} (C);
+  		\path (C) edge [bend left] node[above=0.15cm] {$1$} (D);
+  		\path (D) edge [loop left] node[left=0.15cm] {$0$} (D);
+  		\path (D) edge [bend left] node[left=0.15cm] {$1$} (A);
+	\end{tikzpicture}
+\end{center}
 
+Analizziamo nel dettaglio i quattro stati della macchina a stati finiti:
+
+\begin{itemize}
+	\item \textbf{Scegli Target}: la camera cerca i colori associati agli oggetti rimanenti nell'area oggetti. Una volta individuata l'area, restituisce l'oggetto più vicino alla camera e passa alla fase successiva, Verso Oggetto;
+	\item \textbf{Verso Oggetto}: in questa fase, viene calcolato l'angolo che forma l'oggetto con l'asse della camera. Una volta che l'oggetto è vicino, questo viene catturato e si passa alla modalità successiva;
+	\item \textbf{Trova Area}: la camera cerca una zona di colore associata all'oggetto preso;
+	\item \textbf{Verso Area}: anche qui, viene calcolato l'angolo che l'area forma con l'asse del robot. Una volta che l'oggetto è stato rilasciato, si sceglie un nuovo target.
+\end{itemize}
+
+L'elaborazione del frame viene effettuata nello spazio dei colori HSV (Hue, Saturation, Value).
+Lo spazio dei colori HSV descrive i colori, quindi, in termini di tinta, saturazione e il valore di luminosità. Lo spazio viene rappresentato, solitamente, con un cono:
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.08]{HSV.png}
+	\caption{Spazio dei colori HSV}
+	\label{Fig: movimento_3}
+	\end{center}
+\end{figure}
+
+dove:
+
+\begin{itemize}
+	\item \textbf{hue}: la tinta viene misurata in gradi. Si considera, solitamente, come asse di riferimento il rosso primario. Il verde, quindi, per esempio, si trova a 120 gradi;
+	\item \textbf{saturation}: la saturazione indica l'intensità cromatica
+	\item \textbf{value}: il valore di luminosità indica la brillantezza.
+\end{itemize}
+
+L'aspetto principale per cui si usa lo spazio HSV, invece dello spazio RGB, è che separa i colori dalla loro intensità. Ciò risulta utile in fase di riconoscimento dei colori.
+
+\subsubsection{Calibrazione}
+
+Per poter riconoscere gli oggetti, è stata effettuata inizialmente una fase di calibrazione per gli oggetti della competizione. In particolare, si sono selezionati manualmente, mediante una trackbar, i valori di soglia per HSV, tali da restituire una immagine binaria, con valori pari a 1 solo per l'oggetto considerato.
+
+\subsubsection{Funzionamento}
+
+Acquisiti i frame dalla camera, vengono, quindi, trasformati nello spazio HSV, dove si applica una maschera con i valori settati in fase di calibrazione. 
+
+Per individuare l'area degli oggetti, vengono applicate più maschere, tenendo conto degli oggetti già presi. Se l'area degli oggetti è stata individuata, si traccia il bounding box degli oggetti individuati e si calcola il centro in coordinate pixel di tale bounding box. Quindi, si considera come target, l'oggetto, la cui \textbf{bounding box} ha il centro più vicino alla camera, quindi la y più alta. 
+
+Settato il target, viene calcolato l'angolo tra la retta che parte dal punto più basso dell'asse verticale della camera con il centro del bounding box e l'asse verticale della camera.
+Le coordinate del centro sono ($center_x, center_y$), mentre quelle del centro dell'oggetto ($x, y$).
+L'angolo viene calcolato nel modo seguente:
+
+$$\alpha = \arcsin{\frac{asse}{retta}}$$
+
+dove 
+
+$$asse = |{(y - center_y)}|$$
+
+e
+
+$$retta = \sqrt{(center_x - x)^2 + (center_y - y)^2}$$.
+
+Questo valore è utile per determinare di quanti gradi deve ruotare il robot per dirigersi verso l'oggetto.
+
+\begin{figure}[H]
+	\begin{center}
+	\includegraphics[scale=0.5]{angle.png}
+	\caption{Calcolo dell'angolo}
+	\label{Fig: movimento_3}
+	\end{center}
+\end{figure}
 
 
 

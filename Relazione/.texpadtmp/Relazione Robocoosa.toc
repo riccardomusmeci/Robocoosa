@@ -1,25 +1,27 @@
 \select@language {italian}
 \select@language {italian}
 \contentsline {section}{\numberline {1}Prefazione}{3}{section.1}
-\contentsline {section}{\numberline {2}Introduzione}{3}{section.2}
+\contentsline {section}{\numberline {2}Introduzione}{4}{section.2}
 \contentsline {subsection}{\numberline {2.1}La Robotica}{4}{subsection.2.1}
-\contentsline {subsection}{\numberline {2.2}Tipi di schede}{5}{subsection.2.2}
-\contentsline {subsubsection}{\numberline {2.2.1}Confronto}{6}{subsubsection.2.2.1}
-\contentsline {section}{\numberline {3}La RoboCup}{7}{section.3}
-\contentsline {subsection}{\numberline {3.1}La competizione e le regole}{7}{subsection.3.1}
-\contentsline {section}{\numberline {4}Hardware}{11}{section.4}
-\contentsline {subsection}{\numberline {4.1}Arduino}{11}{subsection.4.1}
-\contentsline {subsection}{\numberline {4.2}Sensori}{12}{subsection.4.2}
-\contentsline {subsection}{\numberline {4.3}Attuatori}{15}{subsection.4.3}
-\contentsline {section}{\numberline {5}Software}{16}{section.5}
-\contentsline {subsection}{\numberline {5.1}Python}{16}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}OpenCV}{17}{subsection.5.2}
-\contentsline {section}{\numberline {6}RoboHenree}{17}{section.6}
-\contentsline {section}{\numberline {7}Progettazione}{18}{section.7}
-\contentsline {subsection}{\numberline {7.1}UML}{19}{subsection.7.1}
-\contentsline {subsection}{\numberline {7.2}Pianificazione delle azioni}{20}{subsection.7.2}
-\contentsline {subsection}{\numberline {7.3}Schema circuitale}{21}{subsection.7.3}
-\contentsline {section}{\numberline {8}Algoritmi e implementazione}{22}{section.8}
-\contentsline {subsection}{\numberline {8.1}Comunicazione con il server e scelta delle azioni}{22}{subsection.8.1}
-\contentsline {subsection}{\numberline {8.2}Movimento del robot}{24}{subsection.8.2}
-\contentsline {subsection}{\numberline {8.3}Elaborazione dei frame}{26}{subsection.8.3}
+\contentsline {subsection}{\numberline {2.2}Tipi di schede}{6}{subsection.2.2}
+\contentsline {subsubsection}{\numberline {2.2.1}Confronto}{8}{subsubsection.2.2.1}
+\contentsline {section}{\numberline {3}La RoboCup}{10}{section.3}
+\contentsline {subsection}{\numberline {3.1}La competizione e le regole}{10}{subsection.3.1}
+\contentsline {section}{\numberline {4}Hardware}{19}{section.4}
+\contentsline {subsection}{\numberline {4.1}Arduino}{19}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Sensori}{20}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Attuatori}{24}{subsection.4.3}
+\contentsline {section}{\numberline {5}Software}{27}{section.5}
+\contentsline {subsection}{\numberline {5.1}Python}{27}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}OpenCV}{28}{subsection.5.2}
+\contentsline {section}{\numberline {6}RoboHenree}{29}{section.6}
+\contentsline {section}{\numberline {7}Progettazione}{31}{section.7}
+\contentsline {subsection}{\numberline {7.1}UML}{32}{subsection.7.1}
+\contentsline {subsection}{\numberline {7.2}Pianificazione delle azioni}{35}{subsection.7.2}
+\contentsline {subsection}{\numberline {7.3}Schema circuitale}{38}{subsection.7.3}
+\contentsline {section}{\numberline {8}Algoritmi e implementazione}{40}{section.8}
+\contentsline {subsection}{\numberline {8.1}Comunicazione con il server e scelta delle azioni}{40}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Movimento del robot}{43}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Elaborazione dei frame}{46}{subsection.8.3}
+\contentsline {subsubsection}{\numberline {8.3.1}Calibrazione}{49}{subsubsection.8.3.1}
+\contentsline {subsubsection}{\numberline {8.3.2}Funzionamento}{49}{subsubsection.8.3.2}
